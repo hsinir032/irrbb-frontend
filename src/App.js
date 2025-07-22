@@ -65,14 +65,14 @@ const App = () => {
         portfolioValue: data.portfolio_value ?? 0,
         yieldCurveData: data.yield_curve_data?.map(item => ({
           name: item.name,
-          yield: item.yield ?? 0
+          yield: item.rate ?? 0
         })) ?? [],
         scenarioData: data.scenario_data?.map(item => ({
-          time: item.time,
-          'Base Case': item.base_case ?? 0,
-          '+200bps': item.plus_200bps ?? 0,
-          '-200bps': item.minus_200bps ?? 0,
-        })) ?? [],
+  	  time: item.time,
+  	  'Base Case': item.data["Base Case"] ?? 0,  // ✅ Correct path
+  	  '+200bps': item.data["+200bps"] ?? 0,      // ✅ Correct path
+  	  '-200bps': item.data["-200bps"] ?? 0       // ✅ Correct path
+	})) ?? [],
         totalLoans: data.total_loans ?? 0,
         totalDeposits: data.total_deposits ?? 0,
         totalDerivatives: data.total_derivatives ?? 0,
