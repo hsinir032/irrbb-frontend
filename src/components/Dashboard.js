@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { fetchEveDrivers } from './services';
+import { fetchEveDrivers, fetchNiiDrivers } from './services';
 
 // Helper function to determine text color based on sensitivity
 const getSensitivityColor = (value) => {
@@ -64,6 +64,36 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     } finally {
       setEveModalLoading(false);
     }
+  };
+
+  // NII Drivers modal state
+  const [niiDrivers, setNiiDrivers] = useState([]);
+  const [showNiiModal, setShowNiiModal] = useState(false);
+  const [niiModalLoading, setNiiModalLoading] = useState(false);
+  const [niiModalError, setNiiModalError] = useState(null);
+  const [niiBreakdown, setNiiBreakdown] = useState('instrument');
+
+  // Handler to fetch and show NII drivers
+  const handleNiiClick = async (breakdown = 'instrument') => {
+    setNiiModalLoading(true);
+    setNiiModalError(null);
+    setShowNiiModal(true);
+    setNiiBreakdown(breakdown);
+    try {
+      const data = await fetchNiiDrivers('Base Case', breakdown);
+      setNiiDrivers(data);
+    } catch (err) {
+      setNiiModalError('Failed to load NII drivers');
+    } finally {
+      setNiiModalLoading(false);
+    }
+  };
+
+  // Handler for breakdown change
+  const handleBreakdownChange = async (e) => {
+    const breakdown = e.target.value;
+    setNiiBreakdown(breakdown);
+    handleNiiClick(breakdown);
   };
 
   return (
@@ -177,7 +207,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-green-300 mb-3">Net Interest Income (Base)</h2>
-              <p className="text-5xl font-extrabold text-green-400">
+              <p className="text-5xl font-extrabold text-green-400 cursor-pointer underline" title="Click to see NII drivers" onClick={() => handleNiiClick('instrument')}>
                 {formatCurrency(dashboardData.netInterestIncome)}
               </p>
               <p className="text-gray-400 mt-2 text-sm">Calculated Net Interest Income (Base Case)</p>
@@ -527,6 +557,54 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   </tbody>
                 </table>
                 {eveDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No EVE driver data available.</div>}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      {/* NII Drivers Modal */}
+      {showNiiModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
+          <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-3xl w-full relative">
+            <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setShowNiiModal(false)}>&times;</button>
+            <h3 className="text-2xl font-bold text-green-300 mb-4">NII Drivers (Base Case)</h3>
+            <div className="mb-4">
+              <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
+              <select id="niiBreakdown" value={niiBreakdown} onChange={handleBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                <option value="instrument">Instrument</option>
+                <option value="type">Type</option>
+                <option value="bucket">Bucket</option>
+              </select>
+            </div>
+            {niiModalLoading ? (
+              <div className="text-center text-gray-300">Loading...</div>
+            ) : niiModalError ? (
+              <div className="text-center text-red-400">{niiModalError}</div>
+            ) : (
+              <div className="overflow-x-auto max-h-96">
+                <table className="min-w-full divide-y divide-gray-700">
+                  <thead className="bg-gray-800">
+                    <tr>
+                      {niiBreakdown === 'instrument' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>}
+                      {niiBreakdown === 'instrument' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>}
+                      {niiBreakdown === 'type' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>}
+                      {niiBreakdown === 'bucket' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Bucket</th>}
+                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">NII Contribution</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-800">
+                    {niiDrivers.map((drv, idx) => (
+                      <tr key={drv.id || idx}>
+                        {niiBreakdown === 'instrument' && <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>}
+                        {niiBreakdown === 'instrument' && <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>}
+                        {niiBreakdown === 'type' && <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>}
+                        {niiBreakdown === 'bucket' && <td className="px-4 py-2 text-gray-200">{drv.breakdown_value}</td>}
+                        <td className="px-4 py-2 text-gray-200">{drv.nii_contribution != null ? drv.nii_contribution.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {niiDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
               </div>
             )}
           </div>
