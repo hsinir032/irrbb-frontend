@@ -50,20 +50,38 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   const [showEveModal, setShowEveModal] = useState(false);
   const [eveModalLoading, setEveModalLoading] = useState(false);
   const [eveModalError, setEveModalError] = useState(null);
+  const [eveScenario, setEveScenario] = useState('Base Case');
+
+  const EVE_SCENARIOS = [
+    'Base Case',
+    'Parallel Up +200bps',
+    'Parallel Down -200bps',
+    'Short Rates Up +100bps',
+    'Short Rates Down -100bps',
+    'Long Rates Up +100bps',
+  ];
 
   // Handler to fetch and show EVE drivers
-  const handleEveClick = async () => {
+  const handleEveClick = async (scenario = 'Base Case') => {
     setEveModalLoading(true);
     setEveModalError(null);
     setShowEveModal(true);
+    setEveScenario(scenario);
     try {
-      const data = await fetchEveDrivers('Base Case');
+      const data = await fetchEveDrivers(scenario);
       setEveDrivers(data);
     } catch (err) {
       setEveModalError('Failed to load EVE drivers');
     } finally {
       setEveModalLoading(false);
     }
+  };
+
+  // Handler for scenario change
+  const handleEveScenarioChange = async (e) => {
+    const scenario = e.target.value;
+    setEveScenario(scenario);
+    handleEveClick(scenario);
   };
 
   // NII Drivers modal state
@@ -215,7 +233,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-teal-300 mb-3">Economic Value of Equity (Base)</h2>
-              <p className="text-5xl font-extrabold text-teal-400 cursor-pointer underline" title="Click to see EVE drivers" onClick={handleEveClick}>
+              <p className="text-5xl font-extrabold text-teal-400 cursor-pointer underline" title="Click to see EVE drivers" onClick={() => handleEveClick('Base Case')}>
                 {formatCurrency(dashboardData.economicValueOfEquity)}
               </p>
               <p className="text-gray-400 mt-2 text-sm">Economic Value of Equity (Base Case)</p>
@@ -529,7 +547,15 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
           <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-3xl w-full relative">
             <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setShowEveModal(false)}>&times;</button>
-            <h3 className="text-2xl font-bold text-teal-300 mb-4">EVE Drivers (Base Case)</h3>
+            <h3 className="text-2xl font-bold text-teal-300 mb-4">EVE Drivers ({eveScenario})</h3>
+            <div className="mb-4">
+              <label htmlFor="eveScenario" className="text-gray-300 mr-2">Scenario:</label>
+              <select id="eveScenario" value={eveScenario} onChange={handleEveScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                {EVE_SCENARIOS.map((sc) => (
+                  <option key={sc} value={sc}>{sc}</option>
+                ))}
+              </select>
+            </div>
             {eveModalLoading ? (
               <div className="text-center text-gray-300">Loading...</div>
             ) : eveModalError ? (
@@ -542,7 +568,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
                       <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Base PV</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Shocked PV</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-800">
@@ -551,7 +576,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                         <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>
                         <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>
                         <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? drv.base_pv.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
-                        <td className="px-4 py-2 text-gray-200">{drv.shocked_pv != null ? drv.shocked_pv.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
                       </tr>
                     ))}
                   </tbody>
