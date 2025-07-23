@@ -2,9 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link } from 'react-router-dom';
 // Import the external components
 import Dashboard from './components/Dashboard';
-import LoanManagement from './components/LoanManagement';
-import DepositManagement from './components/DepositManagement';
-import DerivativeManagement from './components/DerivativeManagement';
+import InstrumentManagement from './components/InstrumentManagement';
+import PortfolioComposition from './components/PortfolioComposition';
 
 // Define the backend URL
 const BACKEND_URL = "https://irrbbb-backend.onrender.com";
@@ -166,14 +165,8 @@ const App = () => {
               <Link to="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
                 Dashboard
               </Link>
-              <Link to="/loans" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
-                Loans
-              </Link>
-              <Link to="/deposits" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
-                Deposits
-              </Link>
-              <Link to="/derivatives" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
-                Derivatives
+              <Link to="/instruments" className="...">Instruments</Link>
+              <Link to="/portfolio" className="...">Portfolio</Link>
               </Link>
             </div>
           </div>
@@ -190,9 +183,8 @@ const App = () => {
                 fetchLiveIRRBBData={fetchLiveIRRBBData}
               />
             } />
-            <Route path="/loans" element={<LoanManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
-            <Route path="/deposits" element={<DepositManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
-            <Route path="/derivatives" element={<DerivativeManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
+            <Route path="/instruments" element={<InstrumentManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
+	    <Route path="/portfolio" element={<PortfolioComposition BACKEND_URL={BACKEND_URL} />} />
           </Routes>
         </div>
       </div>
