@@ -167,7 +167,6 @@ const App = () => {
               </Link>
               <Link to="/instruments" className="...">Instruments</Link>
               <Link to="/portfolio" className="...">Portfolio</Link>
-              </Link>
             </div>
           </div>
         </nav>
