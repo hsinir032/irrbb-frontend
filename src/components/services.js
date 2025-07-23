@@ -5,8 +5,9 @@ export const fetchPortfolioComposition = async (BACKEND_URL) => {
   return res.json();
 };
 
-export const fetchEveDrivers = async (BACKEND_URL, scenario = "Parallel Up +200bps") => {
-  const res = await fetch(`${BACKEND_URL}/api/v1/dashboard/eve-drivers?scenario=${scenario}`);
+export const fetchEveDrivers = async (scenario = "Base Case") => {
+  const res = await fetch(`/api/v1/dashboard/eve-drivers?scenario=${encodeURIComponent(scenario)}`);
+  if (!res.ok) throw new Error('Failed to fetch EVE drivers');
   return res.json();
 };
 
