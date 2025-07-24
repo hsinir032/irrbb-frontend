@@ -19,6 +19,12 @@ const PortfolioComposition = ({ BACKEND_URL }) => {
     return data.filter(d => d.instrument_type === type).map(d => ({ name: d.category, value: d.total_amount }));
   };
 
+  // Prepare net positions data: liabilities as negative, remove net_position
+  const netPositionsData = netPositions.map(item => ({
+    ...item,
+    total_liabilities: -Math.abs(item.total_liabilities), // ensure negative
+  }));
+
   return (
     <div>
       <h1 className="text-3xl font-bold mb-4">Portfolio Composition</h1>
@@ -71,14 +77,13 @@ const PortfolioComposition = ({ BACKEND_URL }) => {
       {/* Net Positions Chart */}
       <div className="mt-12">
         <h2 className="text-xl font-semibold mb-2">Net Positions Across Buckets</h2>
-        <BarChart width={800} height={300} data={netPositions}>
+        <BarChart width={800} height={300} data={netPositionsData}>
           <XAxis dataKey="bucket" stroke="#ccc" />
           <YAxis />
           <Tooltip />
           <Legend />
-          <Bar dataKey="total_assets" fill="#8884d8" name="Assets" />
-          <Bar dataKey="total_liabilities" fill="#ff8042" name="Liabilities" />
-          <Bar dataKey="net_position" fill="#82ca9d" name="Net Position" />
+          <Bar dataKey="total_assets" fill="#4ade80" name="Assets" />
+          <Bar dataKey="total_liabilities" fill="#f87171" name="Liabilities" />
         </BarChart>
       </div>
     </div>
