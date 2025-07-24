@@ -25,6 +25,29 @@ const getGapColor = (value) => {
 // Helper for Pie Chart Colors
 const PIE_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f', '#ffbb28'];
 
+// Duration chart helpers
+const getDurationChartData = (drivers, type) => {
+  // Filter for instrument_type (Loan=asset, Deposit=liability), only Base Case
+  const filtered = drivers.filter(d => d.instrument_type === type && d.duration != null);
+  // Sort by instrument_id for consistent x-axis
+  const sorted = filtered.sort((a, b) => a.instrument_id.localeCompare(b.instrument_id));
+  // Calculate weighted average duration
+  let total = 0, weightedSum = 0;
+  sorted.forEach(d => {
+    const notional = Math.abs(d.base_pv || 0);
+    total += notional;
+    weightedSum += (d.duration || 0) * notional;
+  });
+  const weightedAvg = total > 0 ? weightedSum / total : null;
+  return {
+    points: sorted.map(d => ({
+      instrument: d.instrument_id,
+      duration: d.duration
+    })),
+    weightedAvg
+  };
+};
+
 
 const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   // Local state for NMD and Prepayment assumptions
@@ -113,6 +136,11 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     setNiiBreakdown(breakdown);
     handleNiiClick(breakdown);
   };
+
+  const [eveDriversBase, setEveDriversBase] = useState([]);
+  useEffect(() => {
+    fetchEveDrivers('Base Case').then(setEveDriversBase).catch(() => setEveDriversBase([]));
+  }, []);
 
   return (
     <div className="p-4 sm:p-8">
@@ -307,51 +335,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-2 text-sm">Current yield curve across different maturities.</p>
             </div>
 
-            <div className="lg:col-span-1 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 flex flex-col justify-between">
-              <div>
-                <h2 className="text-xl font-semibold text-gray-300 mb-4">Historical EVE Scenarios</h2>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dashboardData.scenarioData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                    <XAxis dataKey="time" stroke="#94a3b8" />
-                    <YAxis stroke="#94a3b8" label={{ value: 'EVE ($M)', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                      labelStyle={{ color: '#e2e8f0' }}
-                      itemStyle={{ color: '#cbd5e1' }}
-                    />
-                    <Legend wrapperStyle={{ paddingTop: '10px', color: '#cbd5e1' }} />
-                    <Line type="monotone" dataKey="Base Case" stroke="#82ca9d" strokeWidth={2} /> {/* Green */}
-                    <Line type="monotone" dataKey="+200bps" stroke="#ff7300" strokeWidth={2} /> {/* Orange */}
-                    <Line type="monotone" dataKey="-200bps" stroke="#00c8ff" strokeWidth={2} /> {/* Light Blue */}
-                  </LineChart>
-                </ResponsiveContainer>
-                <p className="text-gray-400 mt-2 text-sm">EVE over time under different interest rate shock scenarios.</p>
-              </div>
-            </div>
-
-            {/* EVE Scenarios Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE by Scenario (USD)</h2>
-              <table className="min-w-full divide-y divide-gray-600">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Scenario</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">EVE Value</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {dashboardData.eveScenarios.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.eve_value)}`}>{formatCurrency(item.eve_value)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-gray-400 mt-4 text-sm">Economic Value of Equity under various predefined interest rate shock scenarios.</p>
-            </div>
-
             {/* NII Scenarios Table */}
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII by Scenario (USD)</h2>
@@ -530,7 +513,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 )}
               </div>
             </div>
-
 
             {/* Additional Info / Disclaimer */}
             <div className="lg:col-span-full xl:col-span-full bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
