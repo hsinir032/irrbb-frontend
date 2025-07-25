@@ -15,11 +15,22 @@ const PortfolioComposition = ({
   totalLoans = 0,
   totalDeposits = 0,
   totalDerivatives = 0,
-  loanComposition = {},
-  depositComposition = {},
-  derivativeComposition = {},
   avgRatesData = [] // Array of { category, instrument_type, average_interest_rate }
 }) => {
+  // Build composition objects from avgRatesData
+  const loanComposition = {};
+  const depositComposition = {};
+  const derivativeComposition = {};
+  avgRatesData.forEach(record => {
+    if (record.instrument_type === 'Loan') {
+      loanComposition[record.category] = (loanComposition[record.category] || 0) + (record.total_amount || 0);
+    } else if (record.instrument_type === 'Deposit') {
+      depositComposition[record.category] = (depositComposition[record.category] || 0) + (record.total_amount || 0);
+    } else if (record.instrument_type === 'Derivative') {
+      derivativeComposition[record.category] = (derivativeComposition[record.category] || 0) + (record.total_amount || 0);
+    }
+  });
+
   // Prepare data for average interest rate chart
   const avgRateChartData = avgRatesData.filter(d => d.average_interest_rate != null).map(d => ({
     name: `${d.instrument_type}: ${d.category}`,

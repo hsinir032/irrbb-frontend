@@ -192,13 +192,10 @@ const App = () => {
             <Route path="/instruments" element={<InstrumentManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
 	    <Route path="/portfolio" element={
   <PortfolioComposition
-    totalLoans={dashboardData.totalLoans}
-    totalDeposits={dashboardData.totalDeposits}
-    totalDerivatives={dashboardData.totalDerivatives}
-    loanComposition={dashboardData.loanComposition}
-    depositComposition={dashboardData.depositComposition}
-    derivativeComposition={dashboardData.derivativeComposition}
-    avgRatesData={portfolioCompositionData}
+    totalLoans={portfolioCompositionData.total_loans}
+    totalDeposits={portfolioCompositionData.total_deposits}
+    totalDerivatives={portfolioCompositionData.total_derivatives}
+    avgRatesData={portfolioCompositionData.records}
   />
 } />
           </Routes>
