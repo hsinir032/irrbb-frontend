@@ -37,6 +37,8 @@ const App = () => {
     }
   });
 
+  const [portfolioCompositionData, setPortfolioCompositionData] = useState([]);
+
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -103,6 +105,11 @@ const App = () => {
   useEffect(() => {
     // Initial fetch with default assumptions
     fetchLiveIRRBBData();
+    // Fetch portfolio composition data for avgRatesData
+    fetch(`${BACKEND_URL}/api/v1/portfolio/composition`)
+      .then(res => res.json())
+      .then(setPortfolioCompositionData)
+      .catch(() => setPortfolioCompositionData([]));
   }, []);
 
   return (
@@ -183,7 +190,17 @@ const App = () => {
               />
             } />
             <Route path="/instruments" element={<InstrumentManagement BACKEND_URL={BACKEND_URL} refreshDashboard={fetchLiveIRRBBData} />} />
-	    <Route path="/portfolio" element={<PortfolioComposition BACKEND_URL={BACKEND_URL} />} />
+	    <Route path="/portfolio" element={
+  <PortfolioComposition
+    totalLoans={dashboardData.totalLoans}
+    totalDeposits={dashboardData.totalDeposits}
+    totalDerivatives={dashboardData.totalDerivatives}
+    loanComposition={dashboardData.loanComposition}
+    depositComposition={dashboardData.depositComposition}
+    derivativeComposition={dashboardData.derivativeComposition}
+    avgRatesData={portfolioCompositionData}
+  />
+} />
           </Routes>
         </div>
       </div>
