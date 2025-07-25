@@ -230,6 +230,8 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
               <option value="Checking">Checking</option>
               <option value="Savings">Savings</option>
               <option value="CD">CD</option>
+              <option value="Wholesale Funding">Wholesale Funding</option>
+              <option value="Equity">Equity</option>
             </select>
           </div>
           <div>
@@ -247,7 +249,7 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
             <input type="date" name="open_date" id="new_open_date" value={newDeposit.open_date} onChange={handleNewDepositChange} required
               className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600" />
           </div>
-          {newDeposit.type === 'CD' && (
+          {newDeposit.type === 'CD' || newDeposit.type === 'Wholesale Funding' ? (
             <>
               <div>
                 <label htmlFor="new_maturity_date" className="block text-gray-400 text-sm font-bold mb-2">Maturity Date:</label>
@@ -265,7 +267,7 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                 </select>
               </div>
             </>
-          )}
+          ) : null}
           {(newDeposit.type === 'Checking' || newDeposit.type === 'Savings') && (
             <>
               <div>
@@ -284,6 +286,9 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                   className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600" />
               </div>
             </>
+          )}
+          {newDeposit.type === 'Equity' && (
+            <div className="col-span-full text-yellow-400 text-sm font-semibold">Note: Equity is excluded from IRRBB (NII/EVE) calculations.</div>
           )}
           <div className="md:col-span-2 lg:col-span-3 flex justify-end">
             <button type="submit"
@@ -318,9 +323,9 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
             </thead>
             <tbody className="divide-y divide-gray-700">
               {deposits.map(deposit => (
-                <tr key={deposit.id} className="hover:bg-gray-700 transition-colors duration-200">
+                <tr key={deposit.id} className={`hover:bg-gray-700 transition-colors duration-200${deposit.type === 'Equity' ? ' bg-yellow-900' : ''}`}>
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{deposit.instrument_id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{deposit.type}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{deposit.type}{deposit.type === 'Equity' && <span className="ml-2 text-yellow-400 font-semibold">(Excluded from IRRBB)</span>}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{deposit.balance.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{`${(deposit.interest_rate * 100).toFixed(2)}%`}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{deposit.maturity_date || 'N/A'}</td>
@@ -359,6 +364,8 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                   <option value="Checking">Checking</option>
                   <option value="Savings">Savings</option>
                   <option value="CD">CD</option>
+                  <option value="Wholesale Funding">Wholesale Funding</option>
+                  <option value="Equity">Equity</option>
                 </select>
               </div>
               <div>
@@ -376,7 +383,7 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                 <input type="date" name="open_date" id="edit_open_date" value={editingDeposit.open_date} onChange={handleEditingDepositChange} required
                   className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600" />
               </div>
-              {editingDeposit.type === 'CD' && (
+              {editingDeposit.type === 'CD' || editingDeposit.type === 'Wholesale Funding' ? (
                 <>
                   <div>
                     <label htmlFor="edit_maturity_date" className="block text-gray-400 text-sm font-bold mb-2">Maturity Date:</label>
@@ -394,7 +401,7 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                     </select>
                   </div>
                 </>
-              )}
+              ) : null}
               {(editingDeposit.type === 'Checking' || editingDeposit.type === 'Savings') && (
                 <>
                   <div>
@@ -413,6 +420,9 @@ const DepositManagement = ({ BACKEND_URL, refreshDashboard }) => {
                       className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600" />
                   </div>
                 </>
+              )}
+              {editingDeposit.type === 'Equity' && (
+                <div className="col-span-full text-yellow-400 text-sm font-semibold">Note: Equity is excluded from IRRBB (NII/EVE) calculations.</div>
               )}
               <div className="md:col-span-2 flex justify-end space-x-4 mt-4">
                 <button type="button" onClick={() => setEditingDeposit(null)}

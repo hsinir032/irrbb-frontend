@@ -351,32 +351,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-4 text-sm">Exposure of Net Interest Income to rate changes over time.</p>
             </div>
 
-            {/* EVE Maturity Gap Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Maturity Gap (USD)</h2>
-              <table className="min-w-full divide-y divide-gray-600">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Bucket</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assets (PV)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Liabilities (PV)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Net Gap</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {dashboardData.eveMaturityGap.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.bucket}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.assets)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.liabilities)}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.gap)}`}>{formatCurrency(item.gap)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-gray-400 mt-4 text-sm">Exposure of Economic Value of Equity to rate changes over time.</p>
-            </div>
-
             {/* Additional Info / Disclaimer */}
             <div className="lg:col-span-full xl:col-span-full bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-gray-300 mb-3">Disclaimer</h2>

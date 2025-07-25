@@ -23,16 +23,22 @@ const PortfolioComposition = ({
   const derivativeComposition = {};
   avgRatesData.forEach(record => {
     if (record.instrument_type === 'Loan') {
-      loanComposition[record.category] = (loanComposition[record.category] || 0) + (record.total_amount || 0);
+      // Exclude Cash from loan composition
+      if (record.category !== 'Cash') {
+        loanComposition[record.category] = (loanComposition[record.category] || 0) + (record.total_amount || 0);
+      }
     } else if (record.instrument_type === 'Deposit') {
-      depositComposition[record.category] = (depositComposition[record.category] || 0) + (record.total_amount || 0);
+      // Exclude Equity from deposit composition
+      if (record.category !== 'Equity') {
+        depositComposition[record.category] = (depositComposition[record.category] || 0) + (record.total_amount || 0);
+      }
     } else if (record.instrument_type === 'Derivative') {
       derivativeComposition[record.category] = (derivativeComposition[record.category] || 0) + (record.total_amount || 0);
     }
   });
 
   // Prepare data for average interest rate chart
-  const avgRateChartData = avgRatesData.filter(d => d.average_interest_rate != null).map(d => ({
+  const avgRateChartData = avgRatesData.filter(d => d.average_interest_rate != null && !(d.instrument_type === 'Deposit' && d.category === 'Equity') && !(d.instrument_type === 'Loan' && d.category === 'Cash')).map(d => ({
     name: `${d.instrument_type}: ${d.category}`,
     avgRate: d.average_interest_rate * 100 // convert to %
   }));

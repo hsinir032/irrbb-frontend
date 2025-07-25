@@ -8,7 +8,7 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
   const [newDerivative, setNewDerivative] = useState({
     instrument_id: '',
     type: 'Interest Rate Swap',
-    subtype: 'Payer Swap',
+    subtype: 'Receiver Swap', // Only Receiver Swap allowed
     notional: '',
     start_date: '',
     end_date: '',
@@ -98,7 +98,7 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
 
       setFormMessage({ type: 'success', text: 'Derivative added successfully!' });
       setNewDerivative({ // Reset form
-        instrument_id: '', type: 'Interest Rate Swap', subtype: 'Payer Swap', notional: '',
+        instrument_id: '', type: 'Interest Rate Swap', subtype: 'Receiver Swap', notional: '',
         start_date: '', end_date: '', fixed_rate: '', floating_rate_index: '',
         floating_spread: '', fixed_payment_frequency: 'Quarterly', floating_payment_frequency: 'Monthly'
       });
@@ -115,6 +115,7 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
     // Pre-populate the editing form with current derivative data
     setEditingDerivative({
       ...derivative,
+      subtype: 'Receiver Swap',
       notional: derivative.notional.toString(),
       fixed_rate: derivative.fixed_rate?.toString() || '',
       floating_spread: derivative.floating_spread?.toString() || '',
@@ -231,11 +232,8 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
           </div>
           <div>
             <label htmlFor="new_subtype" className="block text-gray-400 text-sm font-bold mb-2">Subtype:</label>
-            <select name="subtype" id="new_subtype" value={newDerivative.subtype} onChange={handleNewDerivativeChange}
-              className="shadow border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600">
-              <option value="Payer Swap">Payer Swap (Bank Pays Fixed)</option>
-              <option value="Receiver Swap">Receiver Swap (Bank Receives Fixed)</option>
-            </select>
+            <input type="text" name="subtype" id="new_subtype" value="Receiver Swap" readOnly
+              className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 cursor-not-allowed" />
           </div>
           <div>
             <label htmlFor="new_notional" className="block text-gray-400 text-sm font-bold mb-2">Notional:</label>
@@ -329,7 +327,7 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
                 <tr key={derivative.id} className="hover:bg-gray-700 transition-colors duration-200">
                   <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{derivative.instrument_id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{derivative.type}</td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{derivative.subtype}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">Receiver Swap</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{derivative.notional.toLocaleString()}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{derivative.start_date}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{derivative.end_date}</td>
@@ -369,11 +367,8 @@ const DerivativeManagement = ({ BACKEND_URL, refreshDashboard }) => {
               </div>
               <div>
                 <label htmlFor="edit_subtype" className="block text-gray-400 text-sm font-bold mb-2">Subtype:</label>
-                <select name="subtype" id="edit_subtype" value={editingDerivative.subtype} onChange={handleEditingDerivativeChange}
-                  className="shadow border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600">
-                  <option value="Payer Swap">Payer Swap (Bank Pays Fixed)</option>
-                  <option value="Receiver Swap">Receiver Swap (Bank Receives Fixed)</option>
-                </select>
+                <input type="text" name="subtype" id="edit_subtype" value="Receiver Swap" readOnly
+                  className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600 cursor-not-allowed" />
               </div>
               <div>
                 <label htmlFor="edit_notional" className="block text-gray-400 text-sm font-bold mb-2">Notional:</label>
