@@ -439,22 +439,20 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <div className="text-center text-red-400">{eveDriversError}</div>
               ) : (
                 <div className="overflow-x-auto max-h-96">
-                  <table className="min-w-full divide-y divide-gray-700">
-                    <thead className="bg-gray-800">
+                  <table className="min-w-full divide-y divide-gray-600">
+                    <thead className="bg-gray-700">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Base PV</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Duration</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Base PV</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Duration</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-gray-700">
                       {eveDrivers.map((drv, idx) => (
-                        <tr key={drv.id || idx}>
-                          <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? (drv.base_pv / 1000000).toFixed(2) + 'M' : '-'}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.duration != null ? drv.duration.toFixed(2) + ' years' : '-'}</td>
+                        <tr key={drv.id || idx} className="hover:bg-gray-700 transition-colors duration-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{drv.instrument_type}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(drv.base_pv)}`}>{drv.base_pv != null ? (drv.base_pv / 1000000).toFixed(2) + 'M' : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{drv.duration != null ? drv.duration.toFixed(2) + ' years' : '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -466,23 +464,13 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers</h2>
-              <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-4">
-                <div>
-                  <label htmlFor="niiScenario" className="text-gray-300 mr-2">Scenario:</label>
-                  <select id="niiScenario" value={niiScenario} onChange={handleNiiScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                    {NII_SCENARIOS.map((sc) => (
-                      <option key={sc} value={sc}>{sc}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="mt-2 md:mt-0">
-                  <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
-                  <select id="niiBreakdown" value={niiBreakdown} onChange={handleNiiBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                    <option value="instrument">Instrument</option>
-                    <option value="type">Type</option>
-                    <option value="bucket">Bucket</option>
-                  </select>
-                </div>
+              <div className="mb-4">
+                <label htmlFor="niiScenario" className="text-gray-300 mr-2">Scenario:</label>
+                <select id="niiScenario" value={niiScenario} onChange={handleNiiScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                  {NII_SCENARIOS.map((sc) => (
+                    <option key={sc} value={sc}>{sc}</option>
+                  ))}
+                </select>
               </div>
               {niiDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
@@ -490,22 +478,20 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <div className="text-center text-red-400">{niiDriversError}</div>
               ) : (
                 <div className="overflow-x-auto max-h-96">
-                  <table className="min-w-full divide-y divide-gray-700">
-                    <thead className="bg-gray-800">
+                  <table className="min-w-full divide-y divide-gray-600">
+                    <thead className="bg-gray-700">
                       <tr>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">NII Contribution</th>
-                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Breakdown</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">NII Contribution</th>
+                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Bucket</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-800">
+                    <tbody className="divide-y divide-gray-700">
                       {niiDrivers.map((drv, idx) => (
-                        <tr key={drv.id || idx}>
-                          <td className="px-4 py-2 text-gray-200">{drv.instrument_id || '-'}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.instrument_type || '-'}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.nii_contribution != null ? formatCurrency(drv.nii_contribution) : '-'}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.breakdown_value || '-'}</td>
+                        <tr key={drv.id || idx} className="hover:bg-gray-700 transition-colors duration-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{drv.instrument_type || '-'}</td>
+                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(drv.nii_contribution)}`}>{drv.nii_contribution != null ? formatCurrency(drv.nii_contribution) : '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{drv.breakdown_value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
