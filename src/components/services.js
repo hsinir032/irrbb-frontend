@@ -23,3 +23,19 @@ export const fetchNiiDrivers = async (scenario = "Base Case", breakdown = "instr
   if (!res.ok) throw new Error('Failed to fetch NII drivers');
   return res.json();
 };
+
+export const fetchYieldCurves = async (scenario = null) => {
+    try {
+        const url = scenario 
+            ? `${BACKEND_URL}/api/v1/yield-curves?scenario=${encodeURIComponent(scenario)}`
+            : `${BACKEND_URL}/api/v1/yield-curves`;
+        const response = await fetch(url);
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return await response.json();
+    } catch (error) {
+        console.error('Error fetching yield curves:', error);
+        return [];
+    }
+};

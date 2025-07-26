@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
-import { fetchEveDrivers, fetchNiiDrivers } from './services';
+import { fetchEveDrivers, fetchNiiDrivers, fetchYieldCurves } from './services';
 
 // Helper function to determine text color based on sensitivity
 const getSensitivityColor = (value) => {
@@ -141,6 +141,111 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   useEffect(() => {
     fetchEveDrivers('Base Case').then(setEveDriversBase).catch(() => setEveDriversBase([]));
   }, []);
+
+  const [yieldCurves, setYieldCurves] = useState([]);
+  const [selectedScenarios, setSelectedScenarios] = useState(['Base Case', 'Parallel Up +200bps', 'Parallel Down -200bps']);
+  useEffect(() => {
+    const loadYieldCurves = async () => {
+      try {
+        const curves = await fetchYieldCurves();
+        setYieldCurves(curves);
+      } catch (error) {
+        console.error('Error loading yield curves:', error);
+      }
+    };
+    loadYieldCurves();
+  }, []);
+
+  const prepareYieldCurveData = () => {
+    if (!yieldCurves.length) return [];
+    
+    // Group curves by scenario
+    const curvesByScenario = {};
+    yieldCurves.forEach(curve => {
+      if (!curvesByScenario[curve.scenario]) {
+        curvesByScenario[curve.scenario] = [];
+      }
+      curvesByScenario[curve.scenario].push({
+        tenor: curve.tenor,
+        rate: curve.rate * 100 // Convert to percentage
+      });
+    });
+
+    // Create data points for the chart
+    const tenors = ['1M', '3M', '6M', '1Y', '2Y', '3Y', '5Y', '7Y', '10Y', '15Y', '20Y', '30Y'];
+    const chartData = tenors.map(tenor => {
+      const dataPoint = { tenor };
+      selectedScenarios.forEach(scenario => {
+        const scenarioCurve = curvesByScenario[scenario];
+        if (scenarioCurve) {
+          const ratePoint = scenarioCurve.find(point => point.tenor === tenor);
+          if (ratePoint) {
+            dataPoint[scenario] = ratePoint.rate;
+          }
+        }
+      });
+      return dataPoint;
+    });
+
+    return chartData;
+  };
+
+  const scenarioColors = {
+    'Base Case': '#8884d8',
+    'Parallel Up +200bps': '#ff7300',
+    'Parallel Down -200bps': '#00ff00',
+    'Short Rates Up +100bps': '#ff0000',
+    'Short Rates Down -100bps': '#0000ff',
+    'Long Rates Up +100bps': '#800080'
+  };
+
+  const renderYieldCurveChart = () => {
+    const data = prepareYieldCurveData();
+    if (!data.length) return <div>No yield curve data available</div>;
+
+    return (
+      <div className="chart-container">
+        <h3>Yield Curves</h3>
+        <div className="scenario-filters">
+          {Object.keys(scenarioColors).map(scenario => (
+            <label key={scenario} style={{ marginRight: '15px' }}>
+              <input
+                type="checkbox"
+                checked={selectedScenarios.includes(scenario)}
+                onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedScenarios([...selectedScenarios, scenario]);
+                  } else {
+                    setSelectedScenarios(selectedScenarios.filter(s => s !== scenario));
+                  }
+                }}
+              />
+              <span style={{ color: scenarioColors[scenario] }}>{scenario}</span>
+            </label>
+          ))}
+        </div>
+        <ResponsiveContainer width="100%" height={400}>
+          <LineChart data={data}>
+            <CartesianGrid strokeDasharray="3 3" />
+            <XAxis dataKey="tenor" />
+            <YAxis />
+            <Tooltip />
+            <Legend />
+            {selectedScenarios.map(scenario => (
+              <Line
+                key={scenario}
+                type="monotone"
+                dataKey={scenario}
+                stroke={scenarioColors[scenario]}
+                strokeWidth={2}
+                dot={{ fill: scenarioColors[scenario] }}
+              />
+            ))}
+          </LineChart>
+        </ResponsiveContainer>
+      </div>
+    );
+  };
 
   return (
     <div className="p-4 sm:p-8">
@@ -286,21 +391,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             {/* Charts Section */}
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">Yield Curve</h2>
-              <ResponsiveContainer width="100%" height={300}>
-                <LineChart data={dashboardData.yieldCurveData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="name" stroke="#94a3b8" /> {/* slate-400 */}
-                  <YAxis stroke="#94a3b8" label={{ value: 'Yield (%)', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} />
-                  <Tooltip
-                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#cbd5e1' }}
-                  />
-                  <Legend wrapperStyle={{ paddingTop: '10px', color: '#cbd5e1' }} />
-                  <Line type="monotone" dataKey="yield" stroke="#8884d8" activeDot={{ r: 8 }} strokeWidth={2} />
-                </LineChart>
-              </ResponsiveContainer>
-              <p className="text-gray-400 mt-2 text-sm">Current yield curve across different maturities.</p>
+              {renderYieldCurveChart()}
             </div>
 
             {/* NII Scenarios Table */}
