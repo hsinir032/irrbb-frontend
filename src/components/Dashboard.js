@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { fetchEveDrivers, fetchNiiDrivers, fetchYieldCurves } from './services';
 
 // Helper function to determine text color based on sensitivity
@@ -137,13 +137,13 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     handleNiiClick(breakdown);
   };
 
+  const [yieldCurves, setYieldCurves] = useState([]);
+  const [selectedScenarios, setSelectedScenarios] = useState(['Base Case', 'Parallel Up +200bps', 'Parallel Down -200bps']);
   const [eveDriversBase, setEveDriversBase] = useState([]);
   useEffect(() => {
     fetchEveDrivers('Base Case').then(setEveDriversBase).catch(() => setEveDriversBase([]));
   }, []);
 
-  const [yieldCurves, setYieldCurves] = useState([]);
-  const [selectedScenarios, setSelectedScenarios] = useState(['Base Case', 'Parallel Up +200bps', 'Parallel Down -200bps']);
   useEffect(() => {
     const loadYieldCurves = async () => {
       try {
@@ -155,6 +155,146 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     };
     loadYieldCurves();
   }, []);
+
+  // Duration chart data preparation
+  const durationData = {
+    loans: getDurationChartData(eveDriversBase, 'Loan'),
+    deposits: getDurationChartData(eveDriversBase, 'Deposit'),
+    derivatives: getDurationChartData(eveDriversBase, 'Derivative')
+  };
+
+  // Combined duration data for comparison
+  const combinedDurationData = [
+    { type: 'Loans', weightedAvg: durationData.loans.weightedAvg, count: durationData.loans.points.length },
+    { type: 'Deposits', weightedAvg: durationData.deposits.weightedAvg, count: durationData.deposits.points.length },
+    { type: 'Derivatives', weightedAvg: durationData.derivatives.weightedAvg, count: durationData.derivatives.points.length }
+  ].filter(item => item.weightedAvg != null);
+
+  // Duration chart colors
+  const durationColors = {
+    loans: '#8884d8',
+    deposits: '#82ca9d', 
+    derivatives: '#ffc658'
+  };
+
+  const renderDurationCharts = () => {
+    return (
+      <div className="space-y-6">
+        {/* Individual Duration Charts */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Loans Duration */}
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">Asset Duration (Loans)</h3>
+            {durationData.loans.points.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={durationData.loans.points}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="instrument" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#cbd5e1' }}
+                  />
+                  <Line type="monotone" dataKey="duration" stroke={durationColors.loans} strokeWidth={2} dot={{ fill: durationColors.loans }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-400 text-center py-8">No loan duration data available</div>
+            )}
+            {durationData.loans.weightedAvg && (
+              <p className="text-gray-400 mt-2 text-sm">
+                Weighted Avg: {durationData.loans.weightedAvg.toFixed(2)} years
+              </p>
+            )}
+          </div>
+
+          {/* Deposits Duration */}
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">Liability Duration (Deposits)</h3>
+            {durationData.deposits.points.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={durationData.deposits.points}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="instrument" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#cbd5e1' }}
+                  />
+                  <Line type="monotone" dataKey="duration" stroke={durationColors.deposits} strokeWidth={2} dot={{ fill: durationColors.deposits }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-400 text-center py-8">No deposit duration data available</div>
+            )}
+            {durationData.deposits.weightedAvg && (
+              <p className="text-gray-400 mt-2 text-sm">
+                Weighted Avg: {durationData.deposits.weightedAvg.toFixed(2)} years
+              </p>
+            )}
+          </div>
+
+          {/* Derivatives Duration */}
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">Derivatives Duration</h3>
+            {durationData.derivatives.points.length > 0 ? (
+              <ResponsiveContainer width="100%" height={200}>
+                <LineChart data={durationData.derivatives.points}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                  <XAxis dataKey="instrument" stroke="#94a3b8" />
+                  <YAxis stroke="#94a3b8" />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
+                    labelStyle={{ color: '#e2e8f0' }}
+                    itemStyle={{ color: '#cbd5e1' }}
+                  />
+                  <Line type="monotone" dataKey="duration" stroke={durationColors.derivatives} strokeWidth={2} dot={{ fill: durationColors.derivatives }} />
+                </LineChart>
+              </ResponsiveContainer>
+            ) : (
+              <div className="text-gray-400 text-center py-8">No derivative duration data available</div>
+            )}
+            {durationData.derivatives.weightedAvg && (
+              <p className="text-gray-400 mt-2 text-sm">
+                Weighted Avg: {durationData.derivatives.weightedAvg.toFixed(2)} years
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Duration Comparison Chart */}
+        {combinedDurationData.length > 0 && (
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+            <h3 className="text-lg font-semibold text-gray-300 mb-4">Duration Comparison (Weighted Averages)</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={combinedDurationData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+                <XAxis dataKey="type" stroke="#94a3b8" />
+                <YAxis stroke="#94a3b8" label={{ value: 'Duration (Years)', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
+                  labelStyle={{ color: '#e2e8f0' }}
+                  itemStyle={{ color: '#cbd5e1' }}
+                />
+                <Bar dataKey="weightedAvg" fill="#8884d8" />
+              </BarChart>
+            </ResponsiveContainer>
+            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
+              {combinedDurationData.map((item, index) => (
+                <div key={index} className="text-center">
+                  <p className="text-gray-400">{item.type}</p>
+                  <p className="text-gray-200 font-semibold">{item.weightedAvg.toFixed(2)} years</p>
+                  <p className="text-gray-500 text-xs">{item.count} instruments</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
 
   const prepareYieldCurveData = () => {
     if (!yieldCurves.length) return [];
@@ -392,6 +532,12 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">Yield Curve</h2>
               {renderYieldCurveChart()}
+            </div>
+
+            {/* Duration Charts */}
+            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">Duration Analysis</h2>
+              {renderDurationCharts()}
             </div>
 
             {/* NII Scenarios Table */}
