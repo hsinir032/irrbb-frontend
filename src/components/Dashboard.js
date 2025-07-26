@@ -27,7 +27,88 @@ const getGapColor = (value) => {
 // Helper for Pie Chart Colors
 const PIE_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f', '#ffbb28'];
 
+function CashflowLadderChart() {
+  const [scenario, setScenario] = useState('Base Case');
+  const [instrumentType, setInstrumentType] = useState('all');
+  const [aggregation, setAggregation] = useState('assets');
+  const [cashflowType, setCashflowType] = useState('pv');
+  const [data, setData] = useState([]);
+  const [instrumentOptions, setInstrumentOptions] = useState([]);
 
+  useEffect(() => {
+    // Fetch instrument types for dropdown
+    fetch('/api/v1/cashflow-ladder/instrument-types')
+      .then(res => res.json())
+      .then(setInstrumentOptions);
+  }, []);
+
+  useEffect(() => {
+    // Fetch cashflow ladder data with filters
+    const params = new URLSearchParams({
+      scenario,
+      instrument_type: instrumentType,
+      aggregation,
+      cashflow_type: cashflowType
+    });
+    fetch(`/api/v1/cashflow-ladder?${params.toString()}`)
+      .then(res => res.json())
+      .then(setData);
+  }, [scenario, instrumentType, aggregation, cashflowType]);
+
+  return (
+    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 mb-8">
+      <h2 className="text-xl font-semibold text-gray-300 mb-4">Cashflow Ladder</h2>
+      <div className="flex flex-wrap gap-4 mb-4">
+        <div>
+          <label className="text-gray-300 mr-2">Scenario:</label>
+          <select value={scenario} onChange={e => setScenario(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+            <option value="Base Case">Base Case</option>
+            <option value="Parallel Up +200bps">Parallel Up +200bps</option>
+            <option value="Parallel Down -200bps">Parallel Down -200bps</option>
+            <option value="Short Rates Up +100bps">Short Rates Up +100bps</option>
+            <option value="Short Rates Down -100bps">Short Rates Down -100bps</option>
+            <option value="Long Rates Up +100bps">Long Rates Up +100bps</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-gray-300 mr-2">Instrument Type:</label>
+          <select value={instrumentType} onChange={e => setInstrumentType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+            <option value="all">All</option>
+            {instrumentOptions.map(opt => (
+              <option key={opt} value={opt}>{opt}</option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-gray-300 mr-2">Aggregation:</label>
+          <select value={aggregation} onChange={e => setAggregation(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+            <option value="assets">Total Assets</option>
+            <option value="liabilities">Total Liabilities</option>
+            <option value="net">Net Total</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-gray-300 mr-2">Cashflow Type:</label>
+          <select value={cashflowType} onChange={e => setCashflowType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+            <option value="total">Total Cashflows</option>
+            <option value="pv">PV of Cashflows</option>
+          </select>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+          <CartesianGrid strokeDasharray="3 3" stroke="#444" />
+          <XAxis dataKey="time_label" tick={{ fill: '#ccc' }} />
+          <YAxis tick={{ fill: '#ccc' }} />
+          <Tooltip contentStyle={{ background: '#222', border: '1px solid #444', color: '#fff' }} />
+          <Legend />
+          <Bar dataKey="fixed" stackId="a" fill="#4F8A8B" name="Fixed Component" />
+          <Bar dataKey="floating" stackId="a" fill="#FBD46D" name="Floating Component" />
+        </BarChart>
+      </ResponsiveContainer>
+    </div>
+  );
+}
 
 
 const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
@@ -370,6 +451,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
       {!isLoading && !error && (
         <>
+          <CashflowLadderChart />
           {/* Behavioral Assumptions Panel */}
           <div className="bg-gray-800 p-6 rounded-2xl shadow-xl mb-8 border border-gray-700">
             <h2 className="text-2xl font-semibold text-gray-200 mb-4">Behavioral Assumptions</h2>
