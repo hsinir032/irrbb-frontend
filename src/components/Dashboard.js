@@ -27,6 +27,8 @@ const getGapColor = (value) => {
 // Helper for Pie Chart Colors
 const PIE_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f', '#ffbb28'];
 
+const BACKEND_URL = 'https://irrbbb-backend.onrender.com'; // Hardcoded backend URL
+
 function CashflowLadderChart() {
   const [scenario, setScenario] = useState('Base Case');
   const [instrumentType, setInstrumentType] = useState('all');
@@ -37,7 +39,7 @@ function CashflowLadderChart() {
 
   useEffect(() => {
     // Fetch instrument types for dropdown
-    fetch('/api/v1/cashflow-ladder/instrument-types')
+    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder/instrument-types`)
       .then(res => res.json())
       .then(setInstrumentOptions);
   }, []);
@@ -50,7 +52,7 @@ function CashflowLadderChart() {
       aggregation,
       cashflow_type: cashflowType
     });
-    fetch(`/api/v1/cashflow-ladder?${params.toString()}`)
+    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder?${params.toString()}`)
       .then(res => res.json())
       .then(setData);
   }, [scenario, instrumentType, aggregation, cashflowType]);
