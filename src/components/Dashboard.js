@@ -25,28 +25,7 @@ const getGapColor = (value) => {
 // Helper for Pie Chart Colors
 const PIE_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f', '#ffbb28'];
 
-// Duration chart helpers
-const getDurationChartData = (drivers, type) => {
-  // Filter for instrument_type (Loan=asset, Deposit=liability), only Base Case
-  const filtered = drivers.filter(d => d.instrument_type === type && d.duration != null);
-  // Sort by instrument_id for consistent x-axis
-  const sorted = filtered.sort((a, b) => a.instrument_id.localeCompare(b.instrument_id));
-  // Calculate weighted average duration
-  let total = 0, weightedSum = 0;
-  sorted.forEach(d => {
-    const notional = Math.abs(d.base_pv || 0);
-    total += notional;
-    weightedSum += (d.duration || 0) * notional;
-  });
-  const weightedAvg = total > 0 ? weightedSum / total : null;
-  return {
-    points: sorted.map(d => ({
-      instrument: d.instrument_id,
-      duration: d.duration
-    })),
-    weightedAvg
-  };
-};
+
 
 
 const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
@@ -68,12 +47,17 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, prepaymentRate);
   };
 
-  // EVE Drivers modal state
+  // EVE Drivers state
   const [eveDrivers, setEveDrivers] = useState([]);
-  const [showEveModal, setShowEveModal] = useState(false);
-  const [eveModalLoading, setEveModalLoading] = useState(false);
-  const [eveModalError, setEveModalError] = useState(null);
+  const [eveDriversLoading, setEveDriversLoading] = useState(false);
+  const [eveDriversError, setEveDriversError] = useState(null);
   const [eveScenario, setEveScenario] = useState('Base Case');
+
+  // NII Drivers state
+  const [niiDrivers, setNiiDrivers] = useState([]);
+  const [niiDriversLoading, setNiiDriversLoading] = useState(false);
+  const [niiDriversError, setNiiDriversError] = useState(null);
+  const [niiBreakdown, setNiiBreakdown] = useState('instrument');
 
   const EVE_SCENARIOS = [
     'Base Case',
@@ -84,65 +68,40 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     'Long Rates Up +100bps',
   ];
 
-  // Handler to fetch and show EVE drivers
-  const handleEveClick = async (scenario = 'Base Case') => {
-    setEveModalLoading(true);
-    setEveModalError(null);
-    setShowEveModal(true);
+  // Handler to fetch EVE drivers
+  const handleEveScenarioChange = async (e) => {
+    const scenario = e.target.value;
     setEveScenario(scenario);
+    setEveDriversLoading(true);
+    setEveDriversError(null);
     try {
       const data = await fetchEveDrivers(scenario);
       setEveDrivers(data);
     } catch (err) {
-      setEveModalError('Failed to load EVE drivers');
+      setEveDriversError('Failed to load EVE drivers');
     } finally {
-      setEveModalLoading(false);
+      setEveDriversLoading(false);
     }
   };
 
-  // Handler for scenario change
-  const handleEveScenarioChange = async (e) => {
-    const scenario = e.target.value;
-    setEveScenario(scenario);
-    handleEveClick(scenario);
-  };
-
-  // NII Drivers modal state
-  const [niiDrivers, setNiiDrivers] = useState([]);
-  const [showNiiModal, setShowNiiModal] = useState(false);
-  const [niiModalLoading, setNiiModalLoading] = useState(false);
-  const [niiModalError, setNiiModalError] = useState(null);
-  const [niiBreakdown, setNiiBreakdown] = useState('instrument');
-
-  // Handler to fetch and show NII drivers
-  const handleNiiClick = async (breakdown = 'instrument') => {
-    setNiiModalLoading(true);
-    setNiiModalError(null);
-    setShowNiiModal(true);
+  // Handler to fetch NII drivers
+  const handleNiiBreakdownChange = async (e) => {
+    const breakdown = e.target.value;
     setNiiBreakdown(breakdown);
+    setNiiDriversLoading(true);
+    setNiiDriversError(null);
     try {
       const data = await fetchNiiDrivers('Base Case', breakdown);
       setNiiDrivers(data);
     } catch (err) {
-      setNiiModalError('Failed to load NII drivers');
+      setNiiDriversError('Failed to load NII drivers');
     } finally {
-      setNiiModalLoading(false);
+      setNiiDriversLoading(false);
     }
-  };
-
-  // Handler for breakdown change
-  const handleBreakdownChange = async (e) => {
-    const breakdown = e.target.value;
-    setNiiBreakdown(breakdown);
-    handleNiiClick(breakdown);
   };
 
   const [yieldCurves, setYieldCurves] = useState([]);
   const [selectedScenarios, setSelectedScenarios] = useState(['Base Case', 'Parallel Up +200bps', 'Parallel Down -200bps']);
-  const [eveDriversBase, setEveDriversBase] = useState([]);
-  useEffect(() => {
-    fetchEveDrivers('Base Case').then(setEveDriversBase).catch(() => setEveDriversBase([]));
-  }, []);
 
   useEffect(() => {
     const loadYieldCurves = async () => {
@@ -156,145 +115,23 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     loadYieldCurves();
   }, []);
 
-  // Duration chart data preparation
-  const durationData = {
-    loans: getDurationChartData(eveDriversBase, 'Loan'),
-    deposits: getDurationChartData(eveDriversBase, 'Deposit'),
-    derivatives: getDurationChartData(eveDriversBase, 'Derivative')
-  };
+  // Load initial EVE and NII drivers data
+  useEffect(() => {
+    const loadInitialData = async () => {
+      try {
+        const eveData = await fetchEveDrivers('Base Case');
+        setEveDrivers(eveData);
+        
+        const niiData = await fetchNiiDrivers('Base Case', 'instrument');
+        setNiiDrivers(niiData);
+      } catch (error) {
+        console.error('Error loading initial drivers data:', error);
+      }
+    };
+    loadInitialData();
+  }, []);
 
-  // Combined duration data for comparison
-  const combinedDurationData = [
-    { type: 'Loans', weightedAvg: durationData.loans.weightedAvg, count: durationData.loans.points.length },
-    { type: 'Deposits', weightedAvg: durationData.deposits.weightedAvg, count: durationData.deposits.points.length },
-    { type: 'Derivatives', weightedAvg: durationData.derivatives.weightedAvg, count: durationData.derivatives.points.length }
-  ].filter(item => item.weightedAvg != null);
 
-  // Duration chart colors
-  const durationColors = {
-    loans: '#8884d8',
-    deposits: '#82ca9d', 
-    derivatives: '#ffc658'
-  };
-
-  const renderDurationCharts = () => {
-    return (
-      <div className="space-y-6">
-        {/* Individual Duration Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Loans Duration */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <h3 className="text-lg font-semibold text-gray-300 mb-4">Asset Duration (Loans)</h3>
-            {durationData.loans.points.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={durationData.loans.points}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="instrument" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#cbd5e1' }}
-                  />
-                  <Line type="monotone" dataKey="duration" stroke={durationColors.loans} strokeWidth={2} dot={{ fill: durationColors.loans }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-gray-400 text-center py-8">No loan duration data available</div>
-            )}
-            {durationData.loans.weightedAvg && (
-              <p className="text-gray-400 mt-2 text-sm">
-                Weighted Avg: {durationData.loans.weightedAvg.toFixed(2)} years
-              </p>
-            )}
-          </div>
-
-          {/* Deposits Duration */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <h3 className="text-lg font-semibold text-gray-300 mb-4">Liability Duration (Deposits)</h3>
-            {durationData.deposits.points.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={durationData.deposits.points}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="instrument" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#cbd5e1' }}
-                  />
-                  <Line type="monotone" dataKey="duration" stroke={durationColors.deposits} strokeWidth={2} dot={{ fill: durationColors.deposits }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-gray-400 text-center py-8">No deposit duration data available</div>
-            )}
-            {durationData.deposits.weightedAvg && (
-              <p className="text-gray-400 mt-2 text-sm">
-                Weighted Avg: {durationData.deposits.weightedAvg.toFixed(2)} years
-              </p>
-            )}
-          </div>
-
-          {/* Derivatives Duration */}
-          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <h3 className="text-lg font-semibold text-gray-300 mb-4">Derivatives Duration</h3>
-            {durationData.derivatives.points.length > 0 ? (
-              <ResponsiveContainer width="100%" height={200}>
-                <LineChart data={durationData.derivatives.points}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                  <XAxis dataKey="instrument" stroke="#94a3b8" />
-                  <YAxis stroke="#94a3b8" />
-                  <Tooltip 
-                    contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                    labelStyle={{ color: '#e2e8f0' }}
-                    itemStyle={{ color: '#cbd5e1' }}
-                  />
-                  <Line type="monotone" dataKey="duration" stroke={durationColors.derivatives} strokeWidth={2} dot={{ fill: durationColors.derivatives }} />
-                </LineChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="text-gray-400 text-center py-8">No derivative duration data available</div>
-            )}
-            {durationData.derivatives.weightedAvg && (
-              <p className="text-gray-400 mt-2 text-sm">
-                Weighted Avg: {durationData.derivatives.weightedAvg.toFixed(2)} years
-              </p>
-            )}
-          </div>
-        </div>
-
-        {/* Duration Comparison Chart */}
-        {combinedDurationData.length > 0 && (
-          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-            <h3 className="text-lg font-semibold text-gray-300 mb-4">Duration Comparison (Weighted Averages)</h3>
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart data={combinedDurationData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-                <XAxis dataKey="type" stroke="#94a3b8" />
-                <YAxis stroke="#94a3b8" label={{ value: 'Duration (Years)', angle: -90, position: 'insideLeft', fill: '#94a3b8' }} />
-                <Tooltip 
-                  contentStyle={{ backgroundColor: 'rgba(30, 41, 59, 0.9)', border: 'none', borderRadius: '0.75rem' }}
-                  labelStyle={{ color: '#e2e8f0' }}
-                  itemStyle={{ color: '#cbd5e1' }}
-                />
-                <Bar dataKey="weightedAvg" fill="#8884d8" />
-              </BarChart>
-            </ResponsiveContainer>
-            <div className="grid grid-cols-3 gap-4 mt-4 text-sm">
-              {combinedDurationData.map((item, index) => (
-                <div key={index} className="text-center">
-                  <p className="text-gray-400">{item.type}</p>
-                  <p className="text-gray-200 font-semibold">{item.weightedAvg.toFixed(2)} years</p>
-                  <p className="text-gray-500 text-xs">{item.count} instruments</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   const prepareYieldCurveData = () => {
     if (!yieldCurves.length) return [];
@@ -345,24 +182,26 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
     return (
       <div className="chart-container">
-        <h3>Yield Curves</h3>
-        <div className="scenario-filters">
-          {Object.keys(scenarioColors).map(scenario => (
-            <label key={scenario} style={{ marginRight: '15px' }}>
-              <input
-                type="checkbox"
-                checked={selectedScenarios.includes(scenario)}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedScenarios([...selectedScenarios, scenario]);
-                  } else {
-                    setSelectedScenarios(selectedScenarios.filter(s => s !== scenario));
-                  }
-                }}
-              />
-              <span style={{ color: scenarioColors[scenario] }}>{scenario}</span>
-            </label>
-          ))}
+        <div className="mb-4">
+          <label htmlFor="yieldScenarios" className="text-gray-300 mr-2">Select Scenarios:</label>
+          <select 
+            id="yieldScenarios" 
+            multiple 
+            value={selectedScenarios}
+            onChange={(e) => {
+              const selected = Array.from(e.target.selectedOptions, option => option.value);
+              setSelectedScenarios(selected);
+            }}
+            className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-64"
+            size="4"
+          >
+            {Object.keys(scenarioColors).map(scenario => (
+              <option key={scenario} value={scenario} style={{ color: scenarioColors[scenario] }}>
+                {scenario}
+              </option>
+            ))}
+          </select>
+          <p className="text-gray-400 text-sm mt-1">Hold Ctrl/Cmd to select multiple scenarios</p>
         </div>
         <ResponsiveContainer width="100%" height={400}>
           <LineChart data={data}>
@@ -498,7 +337,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-green-300 mb-3">Net Interest Income (Base)</h2>
-              <p className="text-5xl font-extrabold text-green-400 cursor-pointer underline" title="Click to see NII drivers" onClick={() => handleNiiClick('instrument')}>
+              <p className="text-5xl font-extrabold text-green-400">
                 {formatCurrency(dashboardData.netInterestIncome)}
               </p>
               <p className="text-gray-400 mt-2 text-sm">Calculated Net Interest Income (Base Case)</p>
@@ -506,27 +345,13 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-teal-300 mb-3">Economic Value of Equity (Base)</h2>
-              <p className="text-5xl font-extrabold text-teal-400 cursor-pointer underline" title="Click to see EVE drivers" onClick={() => handleEveClick('Base Case')}>
+              <p className="text-5xl font-extrabold text-teal-400">
                 {formatCurrency(dashboardData.economicValueOfEquity)}
               </p>
               <p className="text-gray-400 mt-2 text-sm">Economic Value of Equity (Base Case)</p>
             </div>
 
-            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-orange-300 mb-3">Total Assets PV</h2>
-              <p className="text-5xl font-extrabold text-orange-400">
-                {formatCurrency(dashboardData.totalAssetsValue)}
-              </p>
-              <p className="text-gray-400 mt-2 text-sm">Present Value of all Assets (Loans)</p>
-            </div>
 
-            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-red-300 mb-3">Total Liabilities PV</h2>
-              <p className="text-5xl font-extrabold text-red-400">
-                {formatCurrency(dashboardData.totalLiabilitiesValue)}
-              </p>
-              <p className="text-gray-400 mt-2 text-sm">Present Value of all Liabilities (Deposits)</p>
-            </div>
 
             {/* Charts Section */}
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
@@ -534,11 +359,29 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               {renderYieldCurveChart()}
             </div>
 
-            {/* Duration Charts */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">Duration Analysis</h2>
-              {renderDurationCharts()}
+            {/* EVE Scenarios Table */}
+            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE by Scenario (USD)</h2>
+              <table className="min-w-full divide-y divide-gray-600">
+                <thead className="bg-gray-700">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Scenario</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">EVE Value</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {dashboardData.eveScenarios.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.eve_value)}`}>{formatCurrency(item.eve_value)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-gray-400 mt-4 text-sm">Economic Value of Equity under various predefined interest rate shock scenarios.</p>
             </div>
+
+
 
             {/* NII Scenarios Table */}
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
@@ -588,6 +431,90 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-4 text-sm">Exposure of Net Interest Income to rate changes over time.</p>
             </div>
 
+            {/* EVE Drivers Table */}
+            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Drivers</h2>
+              <div className="mb-4">
+                <label htmlFor="eveScenario" className="text-gray-300 mr-2">Scenario:</label>
+                <select id="eveScenario" value={eveScenario} onChange={handleEveScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                  {EVE_SCENARIOS.map((sc) => (
+                    <option key={sc} value={sc}>{sc}</option>
+                  ))}
+                </select>
+              </div>
+              {eveDriversLoading ? (
+                <div className="text-center text-gray-300">Loading...</div>
+              ) : eveDriversError ? (
+                <div className="text-center text-red-400">{eveDriversError}</div>
+              ) : (
+                <div className="overflow-x-auto max-h-96">
+                  <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Base PV</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Duration</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {eveDrivers.map((drv, idx) => (
+                        <tr key={drv.id || idx}>
+                          <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? drv.base_pv.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.duration != null ? drv.duration.toFixed(2) + ' years' : '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {eveDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No EVE driver data available.</div>}
+                </div>
+              )}
+            </div>
+
+            {/* NII Drivers Table */}
+            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers</h2>
+              <div className="mb-4">
+                <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
+                <select id="niiBreakdown" value={niiBreakdown} onChange={handleNiiBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                  <option value="instrument">Instrument</option>
+                  <option value="type">Type</option>
+                  <option value="bucket">Bucket</option>
+                </select>
+              </div>
+              {niiDriversLoading ? (
+                <div className="text-center text-gray-300">Loading...</div>
+              ) : niiDriversError ? (
+                <div className="text-center text-red-400">{niiDriversError}</div>
+              ) : (
+                <div className="overflow-x-auto max-h-96">
+                  <table className="min-w-full divide-y divide-gray-700">
+                    <thead className="bg-gray-800">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">NII Contribution</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Breakdown</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-800">
+                      {niiDrivers.map((drv, idx) => (
+                        <tr key={drv.id || idx}>
+                          <td className="px-4 py-2 text-gray-200">{drv.instrument_id || '-'}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.instrument_type || '-'}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.nii_contribution != null ? formatCurrency(drv.nii_contribution) : '-'}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.breakdown_value || '-'}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                  {niiDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
+                </div>
+              )}
+            </div>
+
             {/* Additional Info / Disclaimer */}
             <div className="lg:col-span-full xl:col-span-full bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-gray-300 mb-3">Disclaimer</h2>
@@ -598,98 +525,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
           </div>
         </>
       )}
-      {/* EVE Drivers Modal */}
-      {showEveModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-3xl w-full relative">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setShowEveModal(false)}>&times;</button>
-            <h3 className="text-2xl font-bold text-teal-300 mb-4">EVE Drivers ({eveScenario})</h3>
-            <div className="mb-4">
-              <label htmlFor="eveScenario" className="text-gray-300 mr-2">Scenario:</label>
-              <select id="eveScenario" value={eveScenario} onChange={handleEveScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                {EVE_SCENARIOS.map((sc) => (
-                  <option key={sc} value={sc}>{sc}</option>
-                ))}
-              </select>
-            </div>
-            {eveModalLoading ? (
-              <div className="text-center text-gray-300">Loading...</div>
-            ) : eveModalError ? (
-              <div className="text-center text-red-400">{eveModalError}</div>
-            ) : (
-              <div className="overflow-x-auto max-h-96">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-800">
-                    <tr>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Base PV</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {eveDrivers.map((drv, idx) => (
-                      <tr key={drv.id || idx}>
-                        <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>
-                        <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>
-                        <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? drv.base_pv.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {eveDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No EVE driver data available.</div>}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-      {/* NII Drivers Modal */}
-      {showNiiModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-60">
-          <div className="bg-gray-900 rounded-2xl shadow-2xl p-8 max-w-3xl w-full relative">
-            <button className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl" onClick={() => setShowNiiModal(false)}>&times;</button>
-            <h3 className="text-2xl font-bold text-green-300 mb-4">NII Drivers (Base Case)</h3>
-            <div className="mb-4">
-              <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
-              <select id="niiBreakdown" value={niiBreakdown} onChange={handleBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                <option value="instrument">Instrument</option>
-                <option value="type">Type</option>
-                <option value="bucket">Bucket</option>
-              </select>
-            </div>
-            {niiModalLoading ? (
-              <div className="text-center text-gray-300">Loading...</div>
-            ) : niiModalError ? (
-              <div className="text-center text-red-400">{niiModalError}</div>
-            ) : (
-              <div className="overflow-x-auto max-h-96">
-                <table className="min-w-full divide-y divide-gray-700">
-                  <thead className="bg-gray-800">
-                    <tr>
-                      {niiBreakdown === 'instrument' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Instrument ID</th>}
-                      {niiBreakdown === 'instrument' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>}
-                      {niiBreakdown === 'type' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Type</th>}
-                      {niiBreakdown === 'bucket' && <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">Bucket</th>}
-                      <th className="px-4 py-2 text-left text-xs font-medium text-gray-400 uppercase">NII Contribution</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-800">
-                    {niiDrivers.map((drv, idx) => (
-                      <tr key={drv.id || idx}>
-                        {niiBreakdown === 'instrument' && <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>}
-                        {niiBreakdown === 'instrument' && <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>}
-                        {niiBreakdown === 'type' && <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>}
-                        {niiBreakdown === 'bucket' && <td className="px-4 py-2 text-gray-200">{drv.breakdown_value}</td>}
-                        <td className="px-4 py-2 text-gray-200">{drv.nii_contribution != null ? drv.nii_contribution.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-                {niiDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
+
     </div>
   );
 };

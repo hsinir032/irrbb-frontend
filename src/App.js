@@ -172,8 +172,12 @@ const App = () => {
               <Link to="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
                 Dashboard
               </Link>
-              <Link to="/instruments" className="...">Instruments</Link>
-              <Link to="/portfolio" className="...">Portfolio</Link>
+              <Link to="/instruments" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
+                Instruments
+              </Link>
+              <Link to="/portfolio" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
+                Portfolio
+              </Link>
             </div>
           </div>
         </nav>
