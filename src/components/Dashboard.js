@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, PieChart, Pie, Cell, BarChart, Bar } from 'recharts';
 import { fetchEveDrivers, fetchNiiDrivers, fetchYieldCurves } from './services';
-import Select from 'react-select';
+// Remove react-select import
+// import Select from 'react-select';
 
 // Helper function to determine text color based on sensitivity
 const getSensitivityColor = (value) => {
@@ -509,19 +510,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Drivers (Scenario Comparison)</h2>
               <div className="mb-4">
-                <label htmlFor="eveScenarios" className="text-gray-300 mr-2">Scenarios:</label>
-                <div style={{ minWidth: 250, display: 'inline-block' }}>
-                  <Select
-                    inputId="eveScenarios"
-                    isMulti
-                    options={scenarioOptionsEVE}
-                    value={scenarioOptionsEVE.filter(opt => eveSelectedScenarios.includes(opt.value))}
-                    onChange={selected => setEveSelectedScenarios(selected.map(opt => opt.value))}
-                    classNamePrefix="select"
-                    styles={selectStyles}
-                    placeholder="Select scenarios..."
-                  />
-                </div>
+                <label htmlFor="eveScenarios" className="text-gray-300 mr-2">Select Scenarios:</label>
+                <select
+                  id="eveScenarios"
+                  multiple
+                  value={eveSelectedScenarios}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setEveSelectedScenarios(options);
+                  }}
+                  className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-[200px]"
+                >
+                  {scenarioOptionsEVE.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <p className="text-gray-400 text-sm mt-1">Hold Ctrl/Cmd to select multiple scenarios</p>
               </div>
               {eveDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
@@ -567,19 +571,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers (Scenario Comparison)</h2>
               <div className="mb-4">
-                <label htmlFor="niiScenarios" className="text-gray-300 mr-2">Scenarios:</label>
-                <div style={{ minWidth: 250, display: 'inline-block' }}>
-                  <Select
-                    inputId="niiScenarios"
-                    isMulti
-                    options={scenarioOptionsNII}
-                    value={scenarioOptionsNII.filter(opt => niiSelectedScenarios.includes(opt.value))}
-                    onChange={selected => setNiiSelectedScenarios(selected.map(opt => opt.value))}
-                    classNamePrefix="select"
-                    styles={selectStyles}
-                    placeholder="Select scenarios..."
-                  />
-                </div>
+                <label htmlFor="niiScenarios" className="text-gray-300 mr-2">Select Scenarios:</label>
+                <select
+                  id="niiScenarios"
+                  multiple
+                  value={niiSelectedScenarios}
+                  onChange={e => {
+                    const options = Array.from(e.target.selectedOptions, option => option.value);
+                    setNiiSelectedScenarios(options);
+                  }}
+                  className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-[200px]"
+                >
+                  {scenarioOptionsNII.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                  ))}
+                </select>
+                <p className="text-gray-400 text-sm mt-1">Hold Ctrl/Cmd to select multiple scenarios</p>
               </div>
               {niiDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
