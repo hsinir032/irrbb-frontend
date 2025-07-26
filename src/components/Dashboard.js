@@ -453,7 +453,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                         <tr key={drv.id || idx}>
                           <td className="px-4 py-2 text-gray-200">{drv.instrument_id}</td>
                           <td className="px-4 py-2 text-gray-200">{drv.instrument_type}</td>
-                          <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? drv.base_pv.toLocaleString(undefined, {minimumFractionDigits:2, maximumFractionDigits:2}) : '-'}</td>
+                          <td className="px-4 py-2 text-gray-200">{drv.base_pv != null ? (drv.base_pv / 1000000).toFixed(2) + 'M' : '-'}</td>
                           <td className="px-4 py-2 text-gray-200">{drv.duration != null ? drv.duration.toFixed(2) + ' years' : '-'}</td>
                         </tr>
                       ))}
