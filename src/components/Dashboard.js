@@ -84,14 +84,40 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     }
   };
 
-  // Handler to fetch NII drivers
+  // Add state for NII scenario
+  const [niiScenario, setNiiScenario] = useState('Base Case');
+  const NII_SCENARIOS = [
+    'Base Case',
+    'Parallel Up +200bps',
+    'Parallel Down -200bps',
+    'Short Rates Up +100bps',
+    'Short Rates Down -100bps',
+    'Long Rates Up +100bps',
+  ];
+
+  // Update NII drivers fetch logic to use scenario and breakdown
+  const handleNiiScenarioChange = async (e) => {
+    const scenario = e.target.value;
+    setNiiScenario(scenario);
+    setNiiDriversLoading(true);
+    setNiiDriversError(null);
+    try {
+      const data = await fetchNiiDrivers(scenario, niiBreakdown);
+      setNiiDrivers(data);
+    } catch (err) {
+      setNiiDriversError('Failed to load NII drivers');
+    } finally {
+      setNiiDriversLoading(false);
+    }
+  };
+
   const handleNiiBreakdownChange = async (e) => {
     const breakdown = e.target.value;
     setNiiBreakdown(breakdown);
     setNiiDriversLoading(true);
     setNiiDriversError(null);
     try {
-      const data = await fetchNiiDrivers('Base Case', breakdown);
+      const data = await fetchNiiDrivers(niiScenario, breakdown);
       setNiiDrivers(data);
     } catch (err) {
       setNiiDriversError('Failed to load NII drivers');
@@ -121,9 +147,11 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
       try {
         const eveData = await fetchEveDrivers('Base Case');
         setEveDrivers(eveData);
+        console.log('EVE Drivers loaded:', eveData.length, 'records');
         
-        const niiData = await fetchNiiDrivers('Base Case', 'instrument');
+        const niiData = await fetchNiiDrivers(niiScenario, niiBreakdown);
         setNiiDrivers(niiData);
+        console.log('NII Drivers loaded:', niiData.length, 'records');
       } catch (error) {
         console.error('Error loading initial drivers data:', error);
       }
@@ -196,7 +224,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             size="4"
           >
             {Object.keys(scenarioColors).map(scenario => (
-              <option key={scenario} value={scenario} style={{ color: scenarioColors[scenario] }}>
+              <option key={scenario} value={scenario}>
                 {scenario}
               </option>
             ))}
@@ -317,24 +345,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             {/* Key Metrics Cards */}
-            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-blue-300 mb-3">EVE Sensitivity (%)</h2>
-              <p className={`text-5xl font-extrabold ${getSensitivityColor(dashboardData.eveSensitivity)}`}>
-                {dashboardData.eveSensitivity}%
-              </p>
-              <p className="text-gray-400 mt-2 text-sm">Economic Value of Equity Sensitivity to Rate Shocks (Base vs +200bps)</p>
-            </div>
-
-            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-purple-300 mb-3">NII Sensitivity (%)</h2>
-              <p className={`text-5xl font-extrabold ${getSensitivityColor(dashboardData.niiSensitivity)}`}>
-                {dashboardData.niiSensitivity}%
-              </p>
-              <p className="text-gray-400 mt-2 text-sm">Net Interest Income Sensitivity to Rate Shocks (Base vs +200bps)</p>
-            </div>
-
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
               <h2 className="text-xl font-semibold text-green-300 mb-3">Net Interest Income (Base)</h2>
               <p className="text-5xl font-extrabold text-green-400">
@@ -366,16 +378,24 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <thead className="bg-gray-700">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Scenario</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">EVE Value</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">EVE Value</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">% Change vs Base</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {dashboardData.eveScenarios.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.eve_value)}`}>{formatCurrency(item.eve_value)}</td>
-                    </tr>
-                  ))}
+                  {dashboardData.eveScenarios.map((item, index) => {
+                    const baseEve = dashboardData.eveScenarios.find(s => s.scenario_name === 'Base Case')?.eve_value || 0;
+                    const percentChange = baseEve !== 0 ? ((item.eve_value - baseEve) / baseEve * 100) : 0;
+                    return (
+                      <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.eve_value)}`}>{formatCurrency(item.eve_value)}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${percentChange > 0 ? 'text-green-400' : percentChange < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                          {percentChange.toFixed(2)}%
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <p className="text-gray-400 mt-4 text-sm">Economic Value of Equity under various predefined interest rate shock scenarios.</p>
@@ -390,16 +410,24 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <thead className="bg-gray-700">
                   <tr>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Scenario</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">NII Value</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">NII Value</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">% Change vs Base</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-700">
-                  {dashboardData.niiScenarios.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.nii_value)}`}>{formatCurrency(item.nii_value)}</td>
-                    </tr>
-                  ))}
+                  {dashboardData.niiScenarios.map((item, index) => {
+                    const baseNii = dashboardData.niiScenarios.find(s => s.scenario_name === 'Base Case')?.nii_value || 0;
+                    const percentChange = baseNii !== 0 ? ((item.nii_value - baseNii) / baseNii * 100) : 0;
+                    return (
+                      <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.scenario_name}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.nii_value)}`}>{formatCurrency(item.nii_value)}</td>
+                        <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${percentChange > 0 ? 'text-green-400' : percentChange < 0 ? 'text-red-400' : 'text-gray-400'}`}>
+                          {percentChange.toFixed(2)}%
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
               <p className="text-gray-400 mt-4 text-sm">Net Interest Income under various predefined interest rate shock scenarios.</p>
@@ -476,13 +504,23 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
             {/* NII Drivers Table */}
             <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers</h2>
-              <div className="mb-4">
-                <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
-                <select id="niiBreakdown" value={niiBreakdown} onChange={handleNiiBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                  <option value="instrument">Instrument</option>
-                  <option value="type">Type</option>
-                  <option value="bucket">Bucket</option>
-                </select>
+              <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-4">
+                <div>
+                  <label htmlFor="niiScenario" className="text-gray-300 mr-2">Scenario:</label>
+                  <select id="niiScenario" value={niiScenario} onChange={handleNiiScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                    {NII_SCENARIOS.map((sc) => (
+                      <option key={sc} value={sc}>{sc}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="mt-2 md:mt-0">
+                  <label htmlFor="niiBreakdown" className="text-gray-300 mr-2">Breakdown by:</label>
+                  <select id="niiBreakdown" value={niiBreakdown} onChange={handleNiiBreakdownChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+                    <option value="instrument">Instrument</option>
+                    <option value="type">Type</option>
+                    <option value="bucket">Bucket</option>
+                  </select>
+                </div>
               </div>
               {niiDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
