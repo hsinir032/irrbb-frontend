@@ -220,11 +220,11 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               const selected = Array.from(e.target.selectedOptions, option => option.value);
               setSelectedScenarios(selected);
             }}
-            className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-64"
+            className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-64 border border-gray-600 focus:outline-none focus:border-blue-500"
             size="4"
           >
             {Object.keys(scenarioColors).map(scenario => (
-              <option key={scenario} value={scenario}>
+              <option key={scenario} value={scenario} className="py-1">
                 {scenario}
               </option>
             ))}
@@ -363,16 +363,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-2 text-sm">Economic Value of Equity (Base Case)</p>
             </div>
 
-
-
-            {/* Charts Section */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">Yield Curve</h2>
-              {renderYieldCurveChart()}
-            </div>
-
-            {/* EVE Scenarios Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+            {/* EVE by Scenario and NII by Scenario Tables - Side by Side */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE by Scenario (USD)</h2>
               <table className="min-w-full divide-y divide-gray-600">
                 <thead className="bg-gray-700">
@@ -401,10 +393,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-4 text-sm">Economic Value of Equity under various predefined interest rate shock scenarios.</p>
             </div>
 
-
-
-            {/* NII Scenarios Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII by Scenario (USD)</h2>
               <table className="min-w-full divide-y divide-gray-600">
                 <thead className="bg-gray-700">
@@ -433,34 +422,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-4 text-sm">Net Interest Income under various predefined interest rate shock scenarios.</p>
             </div>
 
-            {/* NII Repricing Gap Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Repricing Gap (USD)</h2>
-              <table className="min-w-full divide-y divide-gray-600">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Bucket</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assets (IR-Sensitive)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Liabilities (IR-Sensitive)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Net Gap</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {dashboardData.niiRepricingGap.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.bucket}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.assets)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.liabilities)}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.gap)}`}>{formatCurrency(item.gap)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-gray-400 mt-4 text-sm">Exposure of Net Interest Income to rate changes over time.</p>
-            </div>
-
-            {/* EVE Drivers Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+            {/* EVE Drivers and NII Drivers Tables - Side by Side */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Drivers</h2>
               <div className="mb-4">
                 <label htmlFor="eveScenario" className="text-gray-300 mr-2">Scenario:</label>
@@ -501,8 +464,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               )}
             </div>
 
-            {/* NII Drivers Table */}
-            <div className="lg:col-span-2 xl:col-span-2 bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
               <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers</h2>
               <div className="mb-4 flex flex-col md:flex-row md:items-center md:space-x-4">
                 <div>
@@ -551,6 +513,37 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   {niiDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
                 </div>
               )}
+            </div>
+
+            {/* Yield Curve Chart and NII Repricing Gap Table - Side by Side */}
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">Yield Curve</h2>
+              {renderYieldCurveChart()}
+            </div>
+
+            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Repricing Gap (USD)</h2>
+              <table className="min-w-full divide-y divide-gray-600">
+                <thead className="bg-gray-700">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Bucket</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assets (IR-Sensitive)</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Liabilities (IR-Sensitive)</th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Net Gap</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-700">
+                  {dashboardData.niiRepricingGap.map((item, index) => (
+                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.bucket}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.assets)}</td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.liabilities)}</td>
+                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.gap)}`}>{formatCurrency(item.gap)}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p className="text-gray-400 mt-4 text-sm">Exposure of Net Interest Income to rate changes over time.</p>
             </div>
 
             {/* Additional Info / Disclaimer */}

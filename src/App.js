@@ -168,14 +168,14 @@ const App = () => {
             <Link to="/" className="text-2xl font-bold text-white hover:text-blue-400 transition-colors duration-200">
               IRRBB Dashboard
             </Link>
-            <div className="flex space-x-4 mt-2 md:mt-0">
-              <Link to="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
+            <div className="flex items-center space-x-4 mt-2 md:mt-0">
+              <Link to="/" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200 flex items-center">
                 Dashboard
               </Link>
-              <Link to="/instruments" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
+              <Link to="/instruments" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200 flex items-center">
                 Instruments
               </Link>
-              <Link to="/portfolio" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200">
+              <Link to="/portfolio" className="text-gray-300 hover:text-white px-3 py-2 rounded-md text-lg font-medium transition-colors duration-200 flex items-center">
                 Portfolio
               </Link>
             </div>
