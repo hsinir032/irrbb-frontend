@@ -159,6 +159,62 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     loadInitialData();
   }, []);
 
+  // Add state for multi-scenario selection
+  const [eveSelectedScenarios, setEveSelectedScenarios] = useState(["Base Case"]);
+  const [niiSelectedScenarios, setNiiSelectedScenarios] = useState(["Base Case"]);
+
+  // Fetch EVE drivers for all selected scenarios
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      setEveDriversLoading(true);
+      setEveDriversError(null);
+      try {
+        const data = await fetchEveDrivers(eveSelectedScenarios);
+        setEveDrivers(data);
+      } catch (err) {
+        setEveDriversError('Failed to load EVE drivers');
+      } finally {
+        setEveDriversLoading(false);
+      }
+    };
+    fetchDrivers();
+  }, [eveSelectedScenarios]);
+
+  // Fetch NII drivers for all selected scenarios
+  useEffect(() => {
+    const fetchDrivers = async () => {
+      setNiiDriversLoading(true);
+      setNiiDriversError(null);
+      try {
+        const data = await fetchNiiDrivers(niiSelectedScenarios, niiBreakdown);
+        setNiiDrivers(data);
+      } catch (err) {
+        setNiiDriversError('Failed to load NII drivers');
+      } finally {
+        setNiiDriversLoading(false);
+      }
+    };
+    fetchDrivers();
+  }, [niiSelectedScenarios, niiBreakdown]);
+
+  // Group EVE drivers by instrument_type
+  const eveDriverMatrix = {};
+  eveDrivers.forEach((drv) => {
+    if (!eveDriverMatrix[drv.instrument_type]) {
+      eveDriverMatrix[drv.instrument_type] = {};
+    }
+    eveDriverMatrix[drv.instrument_type][drv.scenario] = drv;
+  });
+
+  // Group NII drivers by instrument_type and bucket
+  const niiDriverMatrix = {};
+  niiDrivers.forEach((drv) => {
+    const key = drv.instrument_type + '|' + (drv.breakdown_value || '');
+    if (!niiDriverMatrix[key]) {
+      niiDriverMatrix[key] = { instrument_type: drv.instrument_type, bucket: drv.breakdown_value };
+    }
+    niiDriverMatrix[key][drv.scenario] = drv;
+  });
 
 
   const prepareYieldCurveData = () => {
@@ -422,16 +478,27 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               <p className="text-gray-400 mt-4 text-sm">Net Interest Income under various predefined interest rate shock scenarios.</p>
             </div>
 
-            {/* EVE Drivers and NII Drivers Tables - Side by Side */}
+            {/* EVE Drivers Comparison Table */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Drivers</h2>
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">EVE Drivers (Scenario Comparison)</h2>
               <div className="mb-4">
-                <label htmlFor="eveScenario" className="text-gray-300 mr-2">Scenario:</label>
-                <select id="eveScenario" value={eveScenario} onChange={handleEveScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                  {EVE_SCENARIOS.map((sc) => (
+                <label htmlFor="eveScenarios" className="text-gray-300 mr-2">Scenarios:</label>
+                <select
+                  id="eveScenarios"
+                  multiple
+                  value={eveSelectedScenarios}
+                  onChange={e => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setEveSelectedScenarios(selected);
+                  }}
+                  className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-64 border border-gray-600 focus:outline-none focus:border-blue-500"
+                  size={Math.min(EVE_SCENARIOS.length, 6)}
+                >
+                  {EVE_SCENARIOS.map(sc => (
                     <option key={sc} value={sc}>{sc}</option>
                   ))}
                 </select>
+                <p className="text-gray-400 text-sm mt-1">Hold Ctrl/Cmd to select multiple scenarios</p>
               </div>
               {eveDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
@@ -442,35 +509,58 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   <table className="min-w-full divide-y divide-gray-600">
                     <thead className="bg-gray-700">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Base PV</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Duration</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
+                        {eveSelectedScenarios.map(sc => (
+                          <th key={sc} className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{sc} PV</th>
+                        ))}
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Duration</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
-                      {eveDrivers.map((drv, idx) => (
-                        <tr key={drv.id || idx} className="hover:bg-gray-700 transition-colors duration-200">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{drv.instrument_type}</td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(drv.base_pv)}`}>{drv.base_pv != null ? (drv.base_pv / 1000000).toFixed(2) + 'M' : '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{drv.duration != null ? drv.duration.toFixed(2) + ' years' : '-'}</td>
+                      {Object.keys(eveDriverMatrix).map(type => (
+                        <tr key={type} className="hover:bg-gray-700 transition-colors duration-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{type}</td>
+                          {eveSelectedScenarios.map(sc => (
+                            <td key={sc} className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(eveDriverMatrix[type][sc]?.base_pv)}`}>{
+                              eveDriverMatrix[type][sc]?.base_pv != null ? (eveDriverMatrix[type][sc].base_pv / 1000000).toFixed(2) + 'M' : '-'
+                            }</td>
+                          ))}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{
+                            // Show duration for the first selected scenario that has it
+                            eveSelectedScenarios.map(sc => eveDriverMatrix[type][sc]?.duration).find(d => d != null) != null
+                              ? eveSelectedScenarios.map(sc => eveDriverMatrix[type][sc]?.duration).find(d => d != null).toFixed(2) + ' years'
+                              : '-'
+                          }</td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {eveDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No EVE driver data available.</div>}
+                  {Object.keys(eveDriverMatrix).length === 0 && <div className="text-center text-gray-400 mt-4">No EVE driver data available.</div>}
                 </div>
               )}
             </div>
 
+            {/* NII Drivers Comparison Table */}
             <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers</h2>
+              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Drivers (Scenario Comparison)</h2>
               <div className="mb-4">
-                <label htmlFor="niiScenario" className="text-gray-300 mr-2">Scenario:</label>
-                <select id="niiScenario" value={niiScenario} onChange={handleNiiScenarioChange} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-                  {NII_SCENARIOS.map((sc) => (
+                <label htmlFor="niiScenarios" className="text-gray-300 mr-2">Scenarios:</label>
+                <select
+                  id="niiScenarios"
+                  multiple
+                  value={niiSelectedScenarios}
+                  onChange={e => {
+                    const selected = Array.from(e.target.selectedOptions, option => option.value);
+                    setNiiSelectedScenarios(selected);
+                  }}
+                  className="bg-gray-800 text-gray-200 rounded px-2 py-1 min-w-64 border border-gray-600 focus:outline-none focus:border-blue-500"
+                  size={Math.min(NII_SCENARIOS.length, 6)}
+                >
+                  {NII_SCENARIOS.map(sc => (
                     <option key={sc} value={sc}>{sc}</option>
                   ))}
                 </select>
+                <p className="text-gray-400 text-sm mt-1">Hold Ctrl/Cmd to select multiple scenarios</p>
               </div>
               {niiDriversLoading ? (
                 <div className="text-center text-gray-300">Loading...</div>
@@ -481,22 +571,30 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   <table className="min-w-full divide-y divide-gray-600">
                     <thead className="bg-gray-700">
                       <tr>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">NII Contribution</th>
-                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Bucket</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Type</th>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Bucket</th>
+                        {niiSelectedScenarios.map(sc => (
+                          <th key={sc} className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">{sc} NII</th>
+                        ))}
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-700">
-                      {niiDrivers.map((drv, idx) => (
-                        <tr key={drv.id || idx} className="hover:bg-gray-700 transition-colors duration-200">
-                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{drv.instrument_type || '-'}</td>
-                          <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(drv.nii_contribution)}`}>{drv.nii_contribution != null ? formatCurrency(drv.nii_contribution) : '-'}</td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{drv.breakdown_value || '-'}</td>
+                      {Object.values(niiDriverMatrix).map(row => (
+                        <tr key={row.instrument_type + '|' + row.bucket} className="hover:bg-gray-700 transition-colors duration-200">
+                          <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{row.instrument_type || '-'}</td>
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{row.bucket || '-'}</td>
+                          {niiSelectedScenarios.map(sc => (
+                            <td key={sc} className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(row[sc]?.nii_contribution)}`}>{
+                              row[sc]?.nii_contribution != null ? formatCurrency(row[sc].nii_contribution) : '-'
+                            }</td>
+                          ))}
+                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300"></td>
                         </tr>
                       ))}
                     </tbody>
                   </table>
-                  {niiDrivers.length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
+                  {Object.keys(niiDriverMatrix).length === 0 && <div className="text-center text-gray-400 mt-4">No NII driver data available.</div>}
                 </div>
               )}
             </div>
