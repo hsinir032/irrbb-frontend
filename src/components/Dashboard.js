@@ -49,6 +49,7 @@ function getYear(dateStr) {
 }
 
 function groupCashflows(data, groupBy) {
+  if (!Array.isArray(data)) return [];
   const groups = {};
   data.forEach(item => {
     let groupKey;
