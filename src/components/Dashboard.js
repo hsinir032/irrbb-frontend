@@ -122,12 +122,12 @@ const RepricingGapChart = () => {
   useEffect(() => {
     fetch(`${BACKEND_URL}/api/v1/repricing-gap`)
       .then(response => response.json())
-      .then(data => {
+      .then(apiData => {
         // Process data to show liabilities as negative bars and ensure net is properly signed
-        const processedData = data.map(item => ({
+        const processedData = apiData.map(item => ({
           ...item,
-          liabilities_negative: -item.liabilities, // Make liabilities negative for downward bars
-          net: item.assets - item.liabilities // Ensure net is properly calculated
+          liabilities_negative: -Math.abs(item.liabilities), // liabilities as negative
+          net: item.assets + (-Math.abs(item.liabilities)), // net as sum
         }));
         setData(processedData);
       })
@@ -245,17 +245,11 @@ const RepricingGapChart = () => {
           <Legend />
           {!showNetOnly && (
             <>
-              <Bar dataKey="assets" stackId="a" fill="#4f46e5" radius={[8, 8, 0, 0]} onClick={handleBarClick} />
-              <Bar dataKey="liabilities" stackId="a" fill="#f87171" radius={[8, 8, 0, 0]} onClick={handleBarClick} />
+              <Bar dataKey="assets" fill="#4f46e5" radius={[8, 8, 0, 0]} onClick={handleBarClick} name="Assets" />
+              <Bar dataKey="liabilities_negative" fill="#f87171" radius={[8, 8, 0, 0]} onClick={handleBarClick} name="Liabilities" />
             </>
           )}
-          <Bar 
-            dataKey="net" 
-            stackId="a"
-            fill="#22d3ee" 
-            radius={[8, 8, 0, 0]} 
-            onClick={handleBarClick}
-          />
+          <Bar dataKey="net" fill="#22d3ee" radius={[8, 8, 0, 0]} onClick={handleBarClick} name="Net" />
         </BarChart>
         <div className="text-center mt-2">
           <small className="text-gray-400 text-sm">Click on any bar to see instrument details</small>
