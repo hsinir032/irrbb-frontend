@@ -592,6 +592,33 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     }),
   };
 
+  const [cashflowLadderData, setCashflowLadderData] = useState([]);
+  const [ladderScenario, setLadderScenario] = useState('Base Case');
+  const [ladderInstrumentType, setLadderInstrumentType] = useState('all');
+  const [ladderAggregation, setLadderAggregation] = useState('assets');
+  const [ladderCashflowType, setLadderCashflowType] = useState('pv');
+
+  useEffect(() => {
+    // Fetch cashflow ladder data from backend
+    const params = new URLSearchParams({
+      scenario: ladderScenario,
+      instrument_type: ladderInstrumentType,
+      aggregation: ladderAggregation,
+      cashflow_type: ladderCashflowType
+    });
+    console.log('Fetching cashflow ladder...');
+    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder?${params.toString()}`)
+      .then(res => res.json())
+      .then(data => {
+        console.log('Cashflow ladder response:', data);
+        setCashflowLadderData(Array.isArray(data) ? data : []);
+      })
+      .catch(err => {
+        console.error('Error fetching cashflow ladder:', err);
+        setCashflowLadderData([]);
+      });
+  }, [ladderScenario, ladderInstrumentType, ladderAggregation, ladderCashflowType]);
+
   return (
     <div className="p-4 sm:p-8">
       <header className="mb-10 text-center">
@@ -624,7 +651,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
       {!isLoading && !error && (
         <>
-          <CashflowLadderChart data={dashboardData.cashflowLadderData || []} />
+          <CashflowLadderChart data={cashflowLadderData} />
           {/* Behavioral Assumptions Panel */}
           <div className="bg-gray-800 p-6 rounded-2xl shadow-xl mb-8 border border-gray-700">
             <h2 className="text-2xl font-semibold text-gray-200 mb-4">Behavioral Assumptions</h2>
