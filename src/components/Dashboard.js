@@ -112,6 +112,150 @@ function CashflowLadderChart() {
   );
 }
 
+const RepricingGapChart = () => {
+  const [data, setData] = useState([]);
+  const [selectedBucket, setSelectedBucket] = useState(null);
+  const [drillDownData, setDrillDownData] = useState(null);
+  const [showNetOnly, setShowNetOnly] = useState(false);
+  const BACKEND_URL = 'https://irrbbb-backend.onrender.com';
+
+  useEffect(() => {
+    fetch(`${BACKEND_URL}/api/v1/repricing-gap`)
+      .then(response => response.json())
+      .then(data => {
+        // Process data to show liabilities as negative bars and ensure net is properly signed
+        const processedData = data.map(item => ({
+          ...item,
+          liabilities_negative: -item.liabilities, // Make liabilities negative for downward bars
+          net: item.assets - item.liabilities // Ensure net is properly calculated
+        }));
+        setData(processedData);
+      })
+      .catch(error => console.error('Error fetching repricing gap data:', error));
+  }, []);
+
+  const handleBarClick = (data) => {
+    if (data && data.bucket) {
+      setSelectedBucket(data.bucket);
+      // Fetch drill-down data
+      fetch(`${BACKEND_URL}/api/v1/repricing-gap/drill-down/${encodeURIComponent(data.bucket)}`)
+        .then(response => response.json())
+        .then(data => setDrillDownData(data))
+        .catch(error => console.error('Error fetching drill-down data:', error));
+    }
+  };
+
+  const handleBackClick = () => {
+    setSelectedBucket(null);
+    setDrillDownData(null);
+  };
+
+  const formatAmount = (amount) => {
+    return `$${(amount / 1000000).toFixed(1)}M`;
+  };
+
+  if (selectedBucket && drillDownData) {
+    // Drill-down view
+    return (
+      <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 mb-8">
+        <h2 className="text-xl font-semibold text-gray-300 mb-4">Repricing Gap - {selectedBucket}</h2>
+        <div className="flex justify-end mb-4">
+          <button onClick={handleBackClick} className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200">
+            ← Back to Overview
+          </button>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-lg shadow-md border border-gray-600">
+            <h3 className="text-lg font-semibold text-gray-300 mb-3">Assets</h3>
+            <div className="list-group">
+              {drillDownData.assets.map((instrument, index) => (
+                <div key={index} className="list-group-item d-flex justify-content-between">
+                  <span>{instrument.instrument_type} ({instrument.instrument_id})</span>
+                  <span className={instrument.amount < 0 ? 'text-red-400' : 'text-green-400'}>
+                    {formatAmount(instrument.amount)}
+                  </span>
+                </div>
+              ))}
+              {drillDownData.assets.length === 0 && (
+                <div className="list-group-item text-gray-400 text-sm">No assets in this bucket</div>
+              )}
+            </div>
+          </div>
+          <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-4 rounded-lg shadow-md border border-gray-600">
+            <h3 className="text-lg font-semibold text-gray-300 mb-3">Liabilities</h3>
+            <div className="list-group">
+              {drillDownData.liabilities.map((instrument, index) => (
+                <div key={index} className="list-group-item d-flex justify-content-between">
+                  <span>{instrument.instrument_type} ({instrument.instrument_id})</span>
+                  <span className={instrument.amount < 0 ? 'text-red-400' : 'text-green-400'}>
+                    {formatAmount(instrument.amount)}
+                  </span>
+                </div>
+              ))}
+              {drillDownData.liabilities.length === 0 && (
+                <div className="list-group-item text-gray-400 text-sm">No liabilities in this bucket</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Main chart view
+  return (
+    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 mb-8">
+      <h2 className="text-xl font-semibold text-gray-300 mb-4">Repricing Gap Analysis</h2>
+      <div className="flex flex-wrap gap-4 mb-4">
+        <div className="form-check">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="showNetOnly"
+            checked={showNetOnly}
+            onChange={(e) => setShowNetOnly(e.target.checked)}
+          />
+          <label className="form-check-label text-gray-300" htmlFor="showNetOnly">
+            Show Net Only
+          </label>
+        </div>
+      </div>
+      <ResponsiveContainer width="100%" height={400}>
+        <BarChart data={data} onClick={handleBarClick}>
+          <CartesianGrid strokeDasharray="3 3" />
+          <XAxis dataKey="bucket" />
+          <YAxis tickFormatter={(value) => `$${(Math.abs(value) / 1000000).toFixed(0)}M`} />
+          <Tooltip 
+            formatter={(value, name) => {
+              if (name === 'Liabilities') {
+                return `$${(Math.abs(value) / 1000000).toFixed(1)}M`;
+              }
+              return `$${(value / 1000000).toFixed(1)}M`;
+            }}
+            labelFormatter={(label) => `Bucket: ${label}`}
+          />
+          <Legend />
+          {!showNetOnly && (
+            <>
+              <Bar dataKey="assets" fill="#4CAF50" name="Assets" />
+              <Bar dataKey="liabilities_negative" fill="#F44336" name="Liabilities" />
+            </>
+          )}
+          <Bar 
+            dataKey="net" 
+            fill="#2196F3" 
+            name="Net" 
+            stroke="#1976D2"
+            strokeWidth={2}
+          />
+        </BarChart>
+        <div className="text-center mt-2">
+          <small className="text-gray-400 text-sm">Click on any bar to see instrument details</small>
+        </div>
+      </ResponsiveContainer>
+    </div>
+  );
+};
 
 const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   // Local state for NMD and Prepayment assumptions
@@ -715,30 +859,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
               {renderYieldCurveChart()}
             </div>
 
-            <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1 overflow-x-auto table-container">
-              <h2 className="text-xl font-semibold text-gray-300 mb-4">NII Repricing Gap (USD)</h2>
-              <table className="min-w-full divide-y divide-gray-600">
-                <thead className="bg-gray-700">
-                  <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tl-lg">Bucket</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Assets (IR-Sensitive)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Liabilities (IR-Sensitive)</th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider rounded-tr-lg">Net Gap</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-700">
-                  {dashboardData.niiRepricingGap.map((item, index) => (
-                    <tr key={index} className="hover:bg-gray-700 transition-colors duration-200">
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-200">{item.bucket}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.assets)}</td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{formatCurrency(item.liabilities)}</td>
-                      <td className={`px-6 py-4 whitespace-nowrap text-sm font-semibold ${getGapColor(item.gap)}`}>{formatCurrency(item.gap)}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              <p className="text-gray-400 mt-4 text-sm">Exposure of Net Interest Income to rate changes over time.</p>
-            </div>
+            <RepricingGapChart />
 
             {/* Additional Info / Disclaimer */}
             <div className="lg:col-span-full xl:col-span-full bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 hover:shadow-2xl transition-all duration-300 transform hover:-translate-y-1">
