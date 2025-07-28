@@ -71,6 +71,9 @@ function groupCashflows(data, groupBy) {
 }
 
 function CashflowLadderChart({ data }) {
+  // Debug: log the data received
+  console.log('CashflowLadderChart data:', data);
+  const safeData = Array.isArray(data) ? data : [];
   const [yAxisMax, setYAxisMax] = useState('auto');
   const [groupBy, setGroupBy] = useState('Month');
   const yAxisOptions = [
@@ -86,7 +89,7 @@ function CashflowLadderChart({ data }) {
     { label: 'Year', value: 'Year' },
   ];
 
-  const groupedData = groupCashflows(data, groupBy);
+  const groupedData = groupCashflows(safeData, groupBy);
 
   return (
     <div>
@@ -97,6 +100,7 @@ function CashflowLadderChart({ data }) {
           value={groupBy}
           onChange={e => setGroupBy(e.target.value)}
           style={{ padding: 4, borderRadius: 4 }}
+          disabled={false}
         >
           {groupByOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -108,6 +112,7 @@ function CashflowLadderChart({ data }) {
           value={yAxisMax}
           onChange={e => setYAxisMax(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}
           style={{ padding: 4, borderRadius: 4 }}
+          disabled={false}
         >
           {yAxisOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -619,7 +624,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
       {!isLoading && !error && (
         <>
-          <CashflowLadderChart />
+          <CashflowLadderChart data={dashboardData.cashflowLadderData || []} />
           {/* Behavioral Assumptions Panel */}
           <div className="bg-gray-800 p-6 rounded-2xl shadow-xl mb-8 border border-gray-700">
             <h2 className="text-2xl font-semibold text-gray-200 mb-4">Behavioral Assumptions</h2>
