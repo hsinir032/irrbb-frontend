@@ -135,12 +135,20 @@ const RepricingGapChart = () => {
   }, []);
 
   const handleBarClick = (data) => {
+    console.log('Bar clicked:', data);
     if (data && data.bucket) {
+      console.log('Fetching drill-down for bucket:', data.bucket);
       setSelectedBucket(data.bucket);
       // Fetch drill-down data
       fetch(`${BACKEND_URL}/api/v1/repricing-gap/drill-down/${encodeURIComponent(data.bucket)}`)
-        .then(response => response.json())
-        .then(data => setDrillDownData(data))
+        .then(response => {
+          console.log('Drill-down response status:', response.status);
+          return response.json();
+        })
+        .then(data => {
+          console.log('Drill-down data received:', data);
+          setDrillDownData(data);
+        })
         .catch(error => console.error('Error fetching drill-down data:', error));
     }
   };
@@ -221,7 +229,7 @@ const RepricingGapChart = () => {
         </div>
       </div>
       <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={data} onClick={handleBarClick}>
+        <BarChart data={data}>
           <CartesianGrid strokeDasharray="3 3" />
           <XAxis dataKey="bucket" />
           <YAxis tickFormatter={(value) => `$${(Math.abs(value) / 1000000).toFixed(0)}M`} />
@@ -237,16 +245,16 @@ const RepricingGapChart = () => {
           <Legend />
           {!showNetOnly && (
             <>
-              <Bar dataKey="assets" fill="#4CAF50" name="Assets" />
-              <Bar dataKey="liabilities_negative" fill="#F44336" name="Liabilities" />
+              <Bar dataKey="assets" stackId="a" fill="#4f46e5" radius={[8, 8, 0, 0]} onClick={handleBarClick} />
+              <Bar dataKey="liabilities" stackId="a" fill="#f87171" radius={[8, 8, 0, 0]} onClick={handleBarClick} />
             </>
           )}
           <Bar 
             dataKey="net" 
-            fill="#2196F3" 
-            name="Net" 
-            stroke="#1976D2"
-            strokeWidth={2}
+            stackId="a"
+            fill="#22d3ee" 
+            radius={[8, 8, 0, 0]} 
+            onClick={handleBarClick}
           />
         </BarChart>
         <div className="text-center mt-2">
