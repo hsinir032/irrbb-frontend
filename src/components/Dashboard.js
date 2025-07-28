@@ -29,83 +29,102 @@ const PIE_COLORS = ['#8884d8', '#82ca9d', '#ffc658', '#ff8042', '#00c49f', '#ffb
 
 const BACKEND_URL = 'https://irrbbb-backend.onrender.com'; // Hardcoded backend URL
 
-function CashflowLadderChart() {
-  const [scenario, setScenario] = useState('Base Case');
-  const [instrumentType, setInstrumentType] = useState('all');
-  const [aggregation, setAggregation] = useState('assets');
-  const [cashflowType, setCashflowType] = useState('pv');
-  const [data, setData] = useState([]);
-  const [instrumentOptions, setInstrumentOptions] = useState([]);
+function getQuarter(dateStr) {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = date.getMonth();
+  const quarter = Math.floor(month / 3) + 1;
+  return `${year} Q${quarter}`;
+}
 
-  useEffect(() => {
-    // Fetch instrument types for dropdown
-    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder/instrument-types`)
-      .then(res => res.json())
-      .then(setInstrumentOptions);
-  }, []);
+function getYearMonth(dateStr) {
+  const date = new Date(dateStr);
+  const year = date.getFullYear();
+  const month = (date.getMonth() + 1).toString().padStart(2, '0');
+  return `${year}-${month}`;
+}
 
-  useEffect(() => {
-    // Fetch cashflow ladder data with filters
-    const params = new URLSearchParams({
-      scenario,
-      instrument_type: instrumentType,
-      aggregation,
-      cashflow_type: cashflowType
-    });
-    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder?${params.toString()}`)
-      .then(res => res.json())
-      .then(setData);
-  }, [scenario, instrumentType, aggregation, cashflowType]);
+function getYear(dateStr) {
+  return new Date(dateStr).getFullYear().toString();
+}
+
+function groupCashflows(data, groupBy) {
+  const groups = {};
+  data.forEach(item => {
+    let groupKey;
+    if (groupBy === 'Year') {
+      groupKey = getYear(item.time_label || item.cashflow_date);
+    } else if (groupBy === 'Quarter') {
+      groupKey = getQuarter(item.time_label || item.cashflow_date);
+    } else {
+      groupKey = getYearMonth(item.time_label || item.cashflow_date);
+    }
+    if (!groups[groupKey]) {
+      groups[groupKey] = { fixed: 0, floating: 0, groupKey };
+    }
+    groups[groupKey].fixed += item.fixed || 0;
+    groups[groupKey].floating += item.floating || 0;
+  });
+  // Convert to array and sort by groupKey
+  return Object.values(groups).sort((a, b) => a.groupKey.localeCompare(b.groupKey));
+}
+
+function CashflowLadderChart({ data }) {
+  const [yAxisMax, setYAxisMax] = useState('auto');
+  const [groupBy, setGroupBy] = useState('Month');
+  const yAxisOptions = [
+    { label: 'Auto', value: 'auto' },
+    { label: '$10M', value: 10_000_000 },
+    { label: '$50M', value: 50_000_000 },
+    { label: '$100M', value: 100_000_000 },
+    { label: '$500M', value: 500_000_000 },
+  ];
+  const groupByOptions = [
+    { label: 'Month', value: 'Month' },
+    { label: 'Quarter', value: 'Quarter' },
+    { label: 'Year', value: 'Year' },
+  ];
+
+  const groupedData = groupCashflows(data, groupBy);
 
   return (
-    <div className="bg-gradient-to-br from-gray-800 to-gray-700 p-6 rounded-2xl shadow-xl border border-gray-600 mb-8">
-      <h2 className="text-xl font-semibold text-gray-300 mb-4">Cashflow Ladder</h2>
-      <div className="flex flex-wrap gap-4 mb-4">
-        <div>
-          <label className="text-gray-300 mr-2">Scenario:</label>
-          <select value={scenario} onChange={e => setScenario(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-            <option value="Base Case">Base Case</option>
-            <option value="Parallel Up +200bps">Parallel Up +200bps</option>
-            <option value="Parallel Down -200bps">Parallel Down -200bps</option>
-            <option value="Short Rates Up +100bps">Short Rates Up +100bps</option>
-            <option value="Short Rates Down -100bps">Short Rates Down -100bps</option>
-            <option value="Long Rates Up +100bps">Long Rates Up +100bps</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-gray-300 mr-2">Instrument Type:</label>
-          <select value={instrumentType} onChange={e => setInstrumentType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-            <option value="all">All</option>
-            {instrumentOptions.map(opt => (
-              <option key={opt} value={opt}>{opt}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-gray-300 mr-2">Aggregation:</label>
-          <select value={aggregation} onChange={e => setAggregation(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-            <option value="assets">Total Assets</option>
-            <option value="liabilities">Total Liabilities</option>
-            <option value="net">Net Total</option>
-          </select>
-        </div>
-        <div>
-          <label className="text-gray-300 mr-2">Cashflow Type:</label>
-          <select value={cashflowType} onChange={e => setCashflowType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-            <option value="total">Total Cashflows</option>
-            <option value="pv">PV of Cashflows</option>
-          </select>
-        </div>
+    <div>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 16 }}>
+        <label htmlFor="groupBy" style={{ marginRight: 8, color: '#fff' }}>Group By:</label>
+        <select
+          id="groupBy"
+          value={groupBy}
+          onChange={e => setGroupBy(e.target.value)}
+          style={{ padding: 4, borderRadius: 4 }}
+        >
+          {groupByOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <label htmlFor="yAxisMax" style={{ marginRight: 8, color: '#fff' }}>Y-Axis Max:</label>
+        <select
+          id="yAxisMax"
+          value={yAxisMax}
+          onChange={e => setYAxisMax(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}
+          style={{ padding: 4, borderRadius: 4 }}
+        >
+          {yAxisOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
       </div>
       <ResponsiveContainer width="100%" height={400}>
-        <BarChart data={data} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
+        <BarChart data={groupedData} margin={{ top: 20, right: 30, left: 0, bottom: 5 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="#444" />
-          <XAxis dataKey="time_label" tick={{ fill: '#ccc' }} />
-          <YAxis tick={{ fill: '#ccc' }} />
-          <Tooltip contentStyle={{ background: '#222', border: '1px solid #444', color: '#fff' }} />
+          <XAxis dataKey="groupKey" tick={{ fill: '#ccc' }} />
+          <YAxis
+            tickFormatter={value => `$${(value / 1_000_000).toFixed(0)}M`}
+            domain={yAxisMax === 'auto' ? undefined : [0, yAxisMax]}
+          />
+          <Tooltip formatter={value => `$${(value / 1_000_000).toFixed(2)}M`} contentStyle={{ background: '#222', border: '1px solid #444', color: '#fff' }} />
           <Legend />
           <Bar dataKey="fixed" stackId="a" fill="#4F8A8B" name="Fixed Component" />
-          <Bar dataKey="floating" stackId="a" fill="#FBD46D" name="Floating Component" />
+          <Bar dataKey="floating" stackId="a" fill="#FFD166" name="Floating Component" />
         </BarChart>
       </ResponsiveContainer>
     </div>
