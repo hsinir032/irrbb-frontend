@@ -70,12 +70,30 @@ function groupCashflows(data, groupBy) {
   return Object.values(groups).sort((a, b) => a.groupKey.localeCompare(b.groupKey));
 }
 
-function CashflowLadderChart({ data }) {
+function CashflowLadderChart({
+  data,
+  scenario,
+  setScenario,
+  instrumentType,
+  setInstrumentType,
+  instrumentOptions,
+  aggregation,
+  setAggregation,
+  cashflowType,
+  setCashflowType,
+  groupBy,
+  setGroupBy,
+  yAxisMax,
+  setYAxisMax
+}) {
   // Debug: log the data received
   console.log('CashflowLadderChart data:', data);
   const safeData = Array.isArray(data) ? data : [];
-  const [yAxisMax, setYAxisMax] = useState('auto');
-  const [groupBy, setGroupBy] = useState('Month');
+  const groupByOptions = [
+    { label: 'Month', value: 'Month' },
+    { label: 'Quarter', value: 'Quarter' },
+    { label: 'Year', value: 'Year' },
+  ];
   const yAxisOptions = [
     { label: 'Auto', value: 'auto' },
     { label: '$10M', value: 10_000_000 },
@@ -83,36 +101,71 @@ function CashflowLadderChart({ data }) {
     { label: '$100M', value: 100_000_000 },
     { label: '$500M', value: 500_000_000 },
   ];
-  const groupByOptions = [
-    { label: 'Month', value: 'Month' },
-    { label: 'Quarter', value: 'Quarter' },
-    { label: 'Year', value: 'Year' },
+  const scenarioOptions = [
+    'Base Case',
+    'Parallel Up +200bps',
+    'Parallel Down -200bps',
+    'Short Rates Up +100bps',
+    'Short Rates Down -100bps',
+    'Long Rates Up +100bps',
+  ];
+  const aggregationOptions = [
+    { label: 'Total Assets', value: 'assets' },
+    { label: 'Total Liabilities', value: 'liabilities' },
+    { label: 'Net Total', value: 'net' },
+  ];
+  const cashflowTypeOptions = [
+    { label: 'Total Cashflows', value: 'total' },
+    { label: 'PV of Cashflows', value: 'pv' },
   ];
 
   const groupedData = groupCashflows(safeData, groupBy);
 
   return (
     <div>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 16 }}>
-        <label htmlFor="groupBy" style={{ marginRight: 8, color: '#fff' }}>Group By:</label>
+      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
+        <label className="text-gray-300 mr-2">Scenario:</label>
+        <select value={scenario} onChange={e => setScenario(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+          {scenarioOptions.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <label className="text-gray-300 mr-2">Instrument Type:</label>
+        <select value={instrumentType} onChange={e => setInstrumentType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+          <option value="all">All</option>
+          {instrumentOptions.map(opt => (
+            <option key={opt} value={opt}>{opt}</option>
+          ))}
+        </select>
+        <label className="text-gray-300 mr-2">Aggregation:</label>
+        <select value={aggregation} onChange={e => setAggregation(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+          {aggregationOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <label className="text-gray-300 mr-2">Cashflow Type:</label>
+        <select value={cashflowType} onChange={e => setCashflowType(e.target.value)} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
+          {cashflowTypeOptions.map(opt => (
+            <option key={opt.value} value={opt.value}>{opt.label}</option>
+          ))}
+        </select>
+        <label className="text-gray-300 mr-2">Group By:</label>
         <select
           id="groupBy"
           value={groupBy}
           onChange={e => setGroupBy(e.target.value)}
-          style={{ padding: 4, borderRadius: 4 }}
-          disabled={false}
+          className="bg-gray-800 text-gray-200 rounded px-2 py-1"
         >
           {groupByOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
           ))}
         </select>
-        <label htmlFor="yAxisMax" style={{ marginRight: 8, color: '#fff' }}>Y-Axis Max:</label>
+        <label className="text-gray-300 mr-2">Y-Axis Max:</label>
         <select
           id="yAxisMax"
           value={yAxisMax}
           onChange={e => setYAxisMax(e.target.value === 'auto' ? 'auto' : Number(e.target.value))}
-          style={{ padding: 4, borderRadius: 4 }}
-          disabled={false}
+          className="bg-gray-800 text-gray-200 rounded px-2 py-1"
         >
           {yAxisOptions.map(opt => (
             <option key={opt.value} value={opt.value}>{opt.label}</option>
@@ -597,6 +650,16 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   const [ladderInstrumentType, setLadderInstrumentType] = useState('all');
   const [ladderAggregation, setLadderAggregation] = useState('assets');
   const [ladderCashflowType, setLadderCashflowType] = useState('pv');
+  const [instrumentOptions, setInstrumentOptions] = useState([]);
+  const [groupBy, setGroupBy] = useState('Month');
+  const [yAxisMax, setYAxisMax] = useState('auto');
+
+  useEffect(() => {
+    // Fetch instrument types for dropdown
+    fetch(`${BACKEND_URL}/api/v1/cashflow-ladder/instrument-types`)
+      .then(res => res.json())
+      .then(setInstrumentOptions);
+  }, []);
 
   useEffect(() => {
     // Fetch cashflow ladder data from backend
@@ -651,7 +714,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
       {!isLoading && !error && (
         <>
-          <CashflowLadderChart data={cashflowLadderData} />
+          <CashflowLadderChart
+            data={cashflowLadderData}
+            scenario={ladderScenario}
+            setScenario={setLadderScenario}
+            instrumentType={ladderInstrumentType}
+            setInstrumentType={setLadderInstrumentType}
+            instrumentOptions={instrumentOptions}
+            aggregation={ladderAggregation}
+            setAggregation={setLadderAggregation}
+            cashflowType={ladderCashflowType}
+            setCashflowType={setLadderCashflowType}
+            groupBy={groupBy}
+            setGroupBy={setGroupBy}
+            yAxisMax={yAxisMax}
+            setYAxisMax={setYAxisMax}
+          />
           {/* Behavioral Assumptions Panel */}
           <div className="bg-gray-800 p-6 rounded-2xl shadow-xl mb-8 border border-gray-700">
             <h2 className="text-2xl font-semibold text-gray-200 mb-4">Behavioral Assumptions</h2>
