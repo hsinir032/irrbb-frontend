@@ -344,13 +344,26 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   const [prepaymentRate, setPrepaymentRate] = useState(dashboardData.current_assumptions.prepayment_rate);
   const [nmdEffectiveMaturityYears, setNmdEffectiveMaturityYears] = useState(5);
 
-  // Update local state when dashboardData.current_assumptions changes (e.g., on initial load or refresh)
+  // Synchronize NMD maturity variables
   useEffect(() => {
     setNmdEffectiveMaturity(dashboardData.current_assumptions.nmd_effective_maturity_years);
+    setNmdEffectiveMaturityYears(dashboardData.current_assumptions.nmd_effective_maturity_years);
+  }, [dashboardData.current_assumptions.nmd_effective_maturity_years]);
+
+  // Synchronize when either variable changes
+  useEffect(() => {
+    setNmdEffectiveMaturityYears(nmdEffectiveMaturity);
+  }, [nmdEffectiveMaturity]);
+
+  useEffect(() => {
+    setNmdEffectiveMaturity(nmdEffectiveMaturityYears);
+  }, [nmdEffectiveMaturityYears]);
+
+  // Update other assumptions when dashboardData changes
+  useEffect(() => {
     setNmdDepositBeta(dashboardData.current_assumptions.nmd_deposit_beta);
     setPrepaymentRate(dashboardData.current_assumptions.prepayment_rate);
-  }, [dashboardData.current_assumptions]);
-
+  }, [dashboardData.current_assumptions.nmd_deposit_beta, dashboardData.current_assumptions.prepayment_rate]);
 
   // Function to apply new assumptions and refetch data
   const applyAssumptions = () => {
