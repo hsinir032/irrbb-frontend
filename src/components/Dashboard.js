@@ -676,6 +676,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
       });
   }, [ladderScenario, ladderInstrumentType, ladderAggregation, ladderCashflowType]);
 
+  const [tempNmdMaturity, setTempNmdMaturity] = useState(dashboardData.current_assumptions.nmd_effective_maturity_years);
+  const [tempNmdBeta, setTempNmdBeta] = useState(dashboardData.current_assumptions.nmd_deposit_beta);
+  const [tempPrepay, setTempPrepay] = useState(dashboardData.current_assumptions.prepayment_rate);
+
+  useEffect(() => {
+    setTempNmdMaturity(dashboardData.current_assumptions.nmd_effective_maturity_years);
+  }, [dashboardData.current_assumptions.nmd_effective_maturity_years]);
+
+  useEffect(() => {
+    setTempNmdBeta(dashboardData.current_assumptions.nmd_deposit_beta);
+  }, [dashboardData.current_assumptions.nmd_deposit_beta]);
+
+  useEffect(() => {
+    setTempPrepay(dashboardData.current_assumptions.prepayment_rate);
+  }, [dashboardData.current_assumptions.prepayment_rate]);
+
   return (
     <div className="p-4 sm:p-8">
       <header className="mb-10 text-center">
@@ -735,8 +751,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="nmdMaturity"
-                  value={dashboardData.current_assumptions.nmd_effective_maturity_years}
-                  onChange={e => {}}
+                  value={tempNmdMaturity}
+                  onChange={e => setTempNmdMaturity(e.target.value)}
                   onBlur={e => {
                     const newValue = parseInt(e.target.value);
                     if (newValue !== dashboardData.current_assumptions.nmd_effective_maturity_years) {
@@ -772,8 +788,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="nmdBeta"
-                  value={dashboardData.current_assumptions.nmd_deposit_beta}
-                  onChange={e => {}}
+                  value={tempNmdBeta}
+                  onChange={e => setTempNmdBeta(e.target.value)}
                   onBlur={e => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== dashboardData.current_assumptions.nmd_deposit_beta) {
@@ -810,8 +826,8 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="prepaymentRate"
-                  value={dashboardData.current_assumptions.prepayment_rate}
-                  onChange={e => {}}
+                  value={tempPrepay}
+                  onChange={e => setTempPrepay(e.target.value)}
                   onBlur={e => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== dashboardData.current_assumptions.prepayment_rate) {
