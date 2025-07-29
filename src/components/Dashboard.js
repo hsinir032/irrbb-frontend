@@ -342,28 +342,13 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   const [nmdEffectiveMaturity, setNmdEffectiveMaturity] = useState(dashboardData.current_assumptions.nmd_effective_maturity_years);
   const [nmdDepositBeta, setNmdDepositBeta] = useState(dashboardData.current_assumptions.nmd_deposit_beta);
   const [prepaymentRate, setPrepaymentRate] = useState(dashboardData.current_assumptions.prepayment_rate);
-  const [nmdEffectiveMaturityYears, setNmdEffectiveMaturityYears] = useState(5);
 
-  // Synchronize NMD maturity variables
+  // Update local state when dashboardData.current_assumptions changes
   useEffect(() => {
     setNmdEffectiveMaturity(dashboardData.current_assumptions.nmd_effective_maturity_years);
-    setNmdEffectiveMaturityYears(dashboardData.current_assumptions.nmd_effective_maturity_years);
-  }, [dashboardData.current_assumptions.nmd_effective_maturity_years]);
-
-  // Synchronize when either variable changes
-  useEffect(() => {
-    setNmdEffectiveMaturityYears(nmdEffectiveMaturity);
-  }, [nmdEffectiveMaturity]);
-
-  useEffect(() => {
-    setNmdEffectiveMaturity(nmdEffectiveMaturityYears);
-  }, [nmdEffectiveMaturityYears]);
-
-  // Update other assumptions when dashboardData changes
-  useEffect(() => {
     setNmdDepositBeta(dashboardData.current_assumptions.nmd_deposit_beta);
     setPrepaymentRate(dashboardData.current_assumptions.prepayment_rate);
-  }, [dashboardData.current_assumptions.nmd_deposit_beta, dashboardData.current_assumptions.prepayment_rate]);
+  }, [dashboardData.current_assumptions.nmd_effective_maturity_years, dashboardData.current_assumptions.nmd_deposit_beta, dashboardData.current_assumptions.prepayment_rate]);
 
   // Function to apply new assumptions and refetch data
   const applyAssumptions = () => {
@@ -398,7 +383,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     setEveDriversLoading(true);
     setEveDriversError(null);
     try {
-      const data = await fetchEveDrivers(scenario, nmdEffectiveMaturityYears);
+      const data = await fetchEveDrivers(scenario, nmdEffectiveMaturity);
       setEveDrivers(data);
     } catch (err) {
       setEveDriversError('Failed to load EVE drivers');
@@ -468,7 +453,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
   useEffect(() => {
     const loadInitialData = async () => {
       try {
-        const eveData = await fetchEveDrivers('Base Case', nmdEffectiveMaturityYears);
+        const eveData = await fetchEveDrivers('Base Case', nmdEffectiveMaturity);
         setEveDrivers(eveData);
         console.log('EVE Drivers loaded:', eveData.length, 'records');
         
@@ -480,7 +465,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
       }
     };
     loadInitialData();
-  }, [nmdEffectiveMaturityYears]);
+  }, [nmdEffectiveMaturity]);
 
   // Add state for multi-scenario selection
   const [eveSelectedScenarios, setEveSelectedScenarios] = useState(["Base Case"]);
@@ -492,7 +477,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
       setEveDriversLoading(true);
       setEveDriversError(null);
       try {
-        const data = await fetchEveDrivers(eveSelectedScenarios, nmdEffectiveMaturityYears);
+        const data = await fetchEveDrivers(eveSelectedScenarios, nmdEffectiveMaturity);
         setEveDrivers(data);
       } catch (err) {
         setEveDriversError('Failed to load EVE drivers');
@@ -501,7 +486,7 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
       }
     };
     fetchDrivers();
-  }, [eveSelectedScenarios, nmdEffectiveMaturityYears]);
+  }, [eveSelectedScenarios, nmdEffectiveMaturity]);
 
   // Fetch NII drivers for all selected scenarios
   useEffect(() => {
@@ -728,12 +713,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
 
       {!isLoading && !error && (
         <>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12, gap: 12, flexWrap: 'wrap' }}>
-            <label className="text-gray-300 mr-2">NMD Effective Maturity (years):</label>
-            <select value={nmdEffectiveMaturityYears} onChange={e => setNmdEffectiveMaturityYears(Number(e.target.value))} className="bg-gray-800 text-gray-200 rounded px-2 py-1">
-              {[2, 3, 4, 5, 7, 10].map(val => <option key={val} value={val}>{val}</option>)}
-            </select>
-          </div>
           <CashflowLadderChart
             data={cashflowLadderData}
             scenario={ladderScenario}
