@@ -736,6 +736,10 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdMaturity"
                   value={nmdEffectiveMaturity}
+                  onChange={(e) => {
+                    const newValue = parseInt(e.target.value);
+                    setNmdEffectiveMaturity(newValue);
+                  }}
                   onBlur={(e) => {
                     const newValue = parseInt(e.target.value);
                     if (newValue !== nmdEffectiveMaturity) {
@@ -768,6 +772,10 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdBeta"
                   value={nmdDepositBeta}
+                  onChange={(e) => {
+                    const newValue = parseFloat(e.target.value);
+                    setNmdDepositBeta(newValue);
+                  }}
                   onBlur={(e) => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== nmdDepositBeta) {
@@ -801,6 +809,10 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="prepaymentRate"
                   value={prepaymentRate}
+                  onChange={(e) => {
+                    const newValue = parseFloat(e.target.value);
+                    setPrepaymentRate(newValue);
+                  }}
                   onBlur={(e) => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== prepaymentRate) {
