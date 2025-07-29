@@ -736,27 +736,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdMaturity"
                   value={nmdEffectiveMaturity}
-                  onChange={(e) => {
-                    const newValue = parseInt(e.target.value);
-                    setNmdEffectiveMaturity(newValue);
-                  }}
-                  onBlur={(e) => {
+                  onChange={e => setNmdEffectiveMaturity(parseInt(e.target.value))}
+                  onBlur={e => {
                     const newValue = parseInt(e.target.value);
                     if (newValue !== nmdEffectiveMaturity) {
-                      setNmdEffectiveMaturity(newValue);
-                      // Trigger calculations when leaving the field
                       fetchLiveIRRBBData(newValue, nmdDepositBeta, prepaymentRate);
+                      setNmdEffectiveMaturity(newValue);
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseInt(e.target.value);
                       if (newValue !== nmdEffectiveMaturity) {
-                        setNmdEffectiveMaturity(newValue);
-                        // Trigger calculations when pressing Enter
                         fetchLiveIRRBBData(newValue, nmdDepositBeta, prepaymentRate);
+                        setNmdEffectiveMaturity(newValue);
                       }
-                      e.target.blur(); // Remove focus from the field
+                      e.target.blur();
                     }
                   }}
                   min="1"
@@ -772,27 +767,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdBeta"
                   value={nmdDepositBeta}
-                  onChange={(e) => {
-                    const newValue = parseFloat(e.target.value);
-                    setNmdDepositBeta(newValue);
-                  }}
-                  onBlur={(e) => {
+                  onChange={e => setNmdDepositBeta(parseFloat(e.target.value))}
+                  onBlur={e => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== nmdDepositBeta) {
-                      setNmdDepositBeta(newValue);
-                      // Trigger calculations when leaving the field
                       fetchLiveIRRBBData(nmdEffectiveMaturity, newValue, prepaymentRate);
+                      setNmdDepositBeta(newValue);
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseFloat(e.target.value);
                       if (newValue !== nmdDepositBeta) {
-                        setNmdDepositBeta(newValue);
-                        // Trigger calculations when pressing Enter
                         fetchLiveIRRBBData(nmdEffectiveMaturity, newValue, prepaymentRate);
+                        setNmdDepositBeta(newValue);
                       }
-                      e.target.blur(); // Remove focus from the field
+                      e.target.blur();
                     }
                   }}
                   min="0.0"
@@ -809,27 +799,22 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="prepaymentRate"
                   value={prepaymentRate}
-                  onChange={(e) => {
-                    const newValue = parseFloat(e.target.value);
-                    setPrepaymentRate(newValue);
-                  }}
-                  onBlur={(e) => {
+                  onChange={e => setPrepaymentRate(parseFloat(e.target.value))}
+                  onBlur={e => {
                     const newValue = parseFloat(e.target.value);
                     if (newValue !== prepaymentRate) {
-                      setPrepaymentRate(newValue);
-                      // Trigger calculations when leaving the field
                       fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, newValue);
+                      setPrepaymentRate(newValue);
                     }
                   }}
-                  onKeyDown={(e) => {
+                  onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseFloat(e.target.value);
                       if (newValue !== prepaymentRate) {
-                        setPrepaymentRate(newValue);
-                        // Trigger calculations when pressing Enter
                         fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, newValue);
+                        setPrepaymentRate(newValue);
                       }
-                      e.target.blur(); // Remove focus from the field
+                      e.target.blur();
                     }
                   }}
                   min="0.0"
