@@ -350,11 +350,6 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
     setPrepaymentRate(dashboardData.current_assumptions.prepayment_rate);
   }, [dashboardData.current_assumptions.nmd_effective_maturity_years, dashboardData.current_assumptions.nmd_deposit_beta, dashboardData.current_assumptions.prepayment_rate]);
 
-  // Function to apply new assumptions and refetch data
-  const applyAssumptions = () => {
-    fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, prepaymentRate);
-  };
-
   // EVE Drivers state
   const [eveDrivers, setEveDrivers] = useState([]);
   const [eveDriversLoading, setEveDriversLoading] = useState(false);
@@ -741,7 +736,12 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdMaturity"
                   value={nmdEffectiveMaturity}
-                  onChange={(e) => setNmdEffectiveMaturity(parseInt(e.target.value))}
+                  onChange={(e) => {
+                    const newValue = parseInt(e.target.value);
+                    setNmdEffectiveMaturity(newValue);
+                    // Immediately trigger calculations
+                    fetchLiveIRRBBData(newValue, nmdDepositBeta, prepaymentRate);
+                  }}
                   min="1"
                   max="30"
                   className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600"
@@ -755,7 +755,12 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="nmdBeta"
                   value={nmdDepositBeta}
-                  onChange={(e) => setNmdDepositBeta(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const newValue = parseFloat(e.target.value);
+                    setNmdDepositBeta(newValue);
+                    // Immediately trigger calculations
+                    fetchLiveIRRBBData(nmdEffectiveMaturity, newValue, prepaymentRate);
+                  }}
                   min="0.0"
                   max="1.0"
                   step="0.01"
@@ -770,20 +775,17 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                   type="number"
                   id="prepaymentRate"
                   value={prepaymentRate}
-                  onChange={(e) => setPrepaymentRate(parseFloat(e.target.value))}
+                  onChange={(e) => {
+                    const newValue = parseFloat(e.target.value);
+                    setPrepaymentRate(newValue);
+                    // Immediately trigger calculations
+                    fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, newValue);
+                  }}
                   min="0.0"
                   max="1.0"
                   step="0.01"
                   className="shadow appearance-none border rounded-lg w-full py-2 px-3 text-gray-200 leading-tight focus:outline-none focus:shadow-outline bg-gray-700 border-gray-600"
                 />
-              </div>
-              <div className="md:col-span-3 flex justify-end">
-                <button
-                  onClick={applyAssumptions}
-                  className="bg-purple-600 hover:bg-purple-700 text-white font-bold py-2 px-4 rounded-lg focus:outline-none focus:shadow-outline transition-colors duration-200"
-                >
-                  Apply Assumptions
-                </button>
               </div>
             </div>
           </div>
