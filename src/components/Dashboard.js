@@ -735,21 +735,27 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="nmdMaturity"
-                  value={nmdEffectiveMaturity}
-                  onChange={e => setNmdEffectiveMaturity(parseInt(e.target.value))}
+                  value={dashboardData.current_assumptions.nmd_effective_maturity_years}
+                  onChange={e => {}}
                   onBlur={e => {
                     const newValue = parseInt(e.target.value);
-                    if (newValue !== nmdEffectiveMaturity) {
-                      fetchLiveIRRBBData(newValue, nmdDepositBeta, prepaymentRate);
-                      setNmdEffectiveMaturity(newValue);
+                    if (newValue !== dashboardData.current_assumptions.nmd_effective_maturity_years) {
+                      fetchLiveIRRBBData(
+                        newValue,
+                        dashboardData.current_assumptions.nmd_deposit_beta,
+                        dashboardData.current_assumptions.prepayment_rate
+                      );
                     }
                   }}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseInt(e.target.value);
-                      if (newValue !== nmdEffectiveMaturity) {
-                        fetchLiveIRRBBData(newValue, nmdDepositBeta, prepaymentRate);
-                        setNmdEffectiveMaturity(newValue);
+                      if (newValue !== dashboardData.current_assumptions.nmd_effective_maturity_years) {
+                        fetchLiveIRRBBData(
+                          newValue,
+                          dashboardData.current_assumptions.nmd_deposit_beta,
+                          dashboardData.current_assumptions.prepayment_rate
+                        );
                       }
                       e.target.blur();
                     }
@@ -766,21 +772,27 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="nmdBeta"
-                  value={nmdDepositBeta}
-                  onChange={e => setNmdDepositBeta(parseFloat(e.target.value))}
+                  value={dashboardData.current_assumptions.nmd_deposit_beta}
+                  onChange={e => {}}
                   onBlur={e => {
                     const newValue = parseFloat(e.target.value);
-                    if (newValue !== nmdDepositBeta) {
-                      fetchLiveIRRBBData(nmdEffectiveMaturity, newValue, prepaymentRate);
-                      setNmdDepositBeta(newValue);
+                    if (newValue !== dashboardData.current_assumptions.nmd_deposit_beta) {
+                      fetchLiveIRRBBData(
+                        dashboardData.current_assumptions.nmd_effective_maturity_years,
+                        newValue,
+                        dashboardData.current_assumptions.prepayment_rate
+                      );
                     }
                   }}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseFloat(e.target.value);
-                      if (newValue !== nmdDepositBeta) {
-                        fetchLiveIRRBBData(nmdEffectiveMaturity, newValue, prepaymentRate);
-                        setNmdDepositBeta(newValue);
+                      if (newValue !== dashboardData.current_assumptions.nmd_deposit_beta) {
+                        fetchLiveIRRBBData(
+                          dashboardData.current_assumptions.nmd_effective_maturity_years,
+                          newValue,
+                          dashboardData.current_assumptions.prepayment_rate
+                        );
                       }
                       e.target.blur();
                     }
@@ -798,21 +810,27 @@ const Dashboard = ({ dashboardData, isLoading, error, fetchLiveIRRBBData }) => {
                 <input
                   type="number"
                   id="prepaymentRate"
-                  value={prepaymentRate}
-                  onChange={e => setPrepaymentRate(parseFloat(e.target.value))}
+                  value={dashboardData.current_assumptions.prepayment_rate}
+                  onChange={e => {}}
                   onBlur={e => {
                     const newValue = parseFloat(e.target.value);
-                    if (newValue !== prepaymentRate) {
-                      fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, newValue);
-                      setPrepaymentRate(newValue);
+                    if (newValue !== dashboardData.current_assumptions.prepayment_rate) {
+                      fetchLiveIRRBBData(
+                        dashboardData.current_assumptions.nmd_effective_maturity_years,
+                        dashboardData.current_assumptions.nmd_deposit_beta,
+                        newValue
+                      );
                     }
                   }}
                   onKeyDown={e => {
                     if (e.key === 'Enter') {
                       const newValue = parseFloat(e.target.value);
-                      if (newValue !== prepaymentRate) {
-                        fetchLiveIRRBBData(nmdEffectiveMaturity, nmdDepositBeta, newValue);
-                        setPrepaymentRate(newValue);
+                      if (newValue !== dashboardData.current_assumptions.prepayment_rate) {
+                        fetchLiveIRRBBData(
+                          dashboardData.current_assumptions.nmd_effective_maturity_years,
+                          dashboardData.current_assumptions.nmd_deposit_beta,
+                          newValue
+                        );
                       }
                       e.target.blur();
                     }
