@@ -7,16 +7,16 @@ export const fetchPortfolioComposition = async () => {
   return res.json();
 };
 
-export const fetchEveDrivers = async (scenarios = ["Base Case"]) => {
+export const fetchEveDrivers = async (scenarios = ["Base Case"], nmdEffectiveMaturityYears = 5) => {
   let url;
   if (Array.isArray(scenarios)) {
-    url = `${BACKEND_URL}/api/v1/dashboard/eve-drivers?scenarios=${encodeURIComponent(scenarios.join(","))}`;
+    url = `${BACKEND_URL}/api/v1/dashboard/eve-drivers?scenarios=${encodeURIComponent(scenarios.join(","))}&nmd_effective_maturity_years=${nmdEffectiveMaturityYears}`;
   } else {
-    url = `${BACKEND_URL}/api/v1/dashboard/eve-drivers?scenarios=${encodeURIComponent(scenarios)}`;
+    url = `${BACKEND_URL}/api/v1/dashboard/eve-drivers?scenarios=${encodeURIComponent(scenarios)}&nmd_effective_maturity_years=${nmdEffectiveMaturityYears}`;
   }
-  const res = await fetch(url);
-  if (!res.ok) throw new Error("Failed to fetch EVE drivers");
-  return res.json();
+  const response = await fetch(url);
+  if (!response.ok) throw new Error('Failed to fetch EVE drivers');
+  return response.json();
 };
 
 export const fetchNetPositions = async (scenario = "Base Case") => {
